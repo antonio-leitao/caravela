@@ -19,7 +19,7 @@ Index creation has to be done in a carefull way as to assure that the 20Trl regi
 For now my soultion has been to use a 16-simplex centered on the mean of the data. This assures not only the intersection of all bisectors but allso that such intersection occurs smack down in the middle of the data.
 It is easy to see that an n-simplex will contain all possible permutations since a simplex is given by:
 
-$$ \Delta = \left{ \theta_1u_1 + \theta_2u_2 + \theta_3u_3 + \dots + \theta_nu_n \middle| \sum_iˆk \theta_i =1\right}$$
+$$ \Delta = \left\{ \theta_1u_1 + \theta_2u_2 + \theta_3u_3 + \dots + \theta_nu_n \middle| \sum_iˆk \theta_i =1\right\}$$
 
 It seems to me that as long as we make sure that the data is contained in the simplex then all regions should be accessible. As in, a point `x` will be in region $A,B,C,D$ if $\theta_a > \theta_b > \theta_c > \theta_d$. But i might be wrong, altough early tests point otherwise.
 
