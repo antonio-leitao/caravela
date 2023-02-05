@@ -1,6 +1,6 @@
 
 <h1 align=center>
-<img src="assets/caravela_logo_placeholder.jpeg">
+<img width=600 src="assets/caravela_logo_placeholder.jpeg">
 <p><code>( /\ /? /\ \/ [- |_ /\</code></p>
 <h1/>
 
