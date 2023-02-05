@@ -1,8 +1,8 @@
 
 <h1 align=center>
-<img width=600 src="assets/caravela_logo_placeholder.jpeg">
+<img width=300 src="assets/caravela_logo_placeholder.jpeg">
 <p><code>( /\ /? /\ \/ [- |_ /\</code></p>
-<h1/>
+</h1>
 
 <p>Logo is quanta Magazine but I like the vibe, is here for inspo.</p>
 
