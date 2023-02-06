@@ -8,9 +8,9 @@ homepage="https://github.com/antonio-leitao/caravela"
 repository="https://github.com/antonio-leitao/caravela"
 readme="README.md"
 license="Apache 2.0"
-license-file = "LICENSE.txt"
-keywords = ["machine learnign","nearest neighbors"]
+keywords = ["machine learning","nearest neighbors"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+nohash-hasher = "*"

@@ -13,28 +13,35 @@ Caravela uses a relative position system. It measures your position to 16 marks 
 2. Memory Reduction: Each point is encoded into the vector of neighbours which is `64` bits.
 3. Accuracy: 16 points partition a space into over 20 Trillion(!) regions.
 
-## Index Creation
+# Index Creation
 Index creation has to be done in a carefull way as to assure that the 20Trl regions in fact exist. The region boundaries are the bisectors of every pairwise set of marks. To ensure that all possible permutation exist then we must create a polygon with the points that ensure that there is intersection between any two of these bisectors. MOreover we must ensure that it contains the data.
 
 For now my soultion has been to use a 16-simplex centered on the mean of the data. This assures not only the intersection of all bisectors but allso that such intersection occurs smack down in the middle of the data.
 It is easy to see that an n-simplex will contain all possible permutations since a simplex is given by:
 
-$$ \Delta = \left( \theta_1u_1 + \theta_2u_2 + \theta_3u_3 + \dots + \theta_nu_n \middle| \sum_iˆk \theta_i =1\right)$$
+$$ \Delta = \left( \theta_1u_1 + \theta_2u_2 + \theta_3u_3 + \dots + \theta_nu_n \middle| \sum_i \theta_i =1\right)$$
 
 It seems to me that as long as we make sure that the data is contained in the simplex then all regions should be accessible. As in, a point `x` will be in region $ABCD$ if $\theta_A > \theta_B > \theta_C > \theta_D$. But i might be wrong, altough early tests point otherwise.
 
 Currently each vertex of the simplex is positioned along the first 16 direction of the PCA, centerd in the mean of the data at the distance of the amplitude of the data. This might change altough it doesnt seem to affect much the results.
 
-## Query
+# Query
+
 Necessary first step is to find the distance to each of the 16 vertexes and order the result. Finding an exact match is as simple as accessing some array with that vector as index. The problem is searching.
 
 This is the tricky part. We dont want to search. Obvious choice is to just access some index. But i really dont see how. Best candidate has been the prefix tree let me show how:
 
+### Option 1 - Prefix Tree
 Each vector is encoded as the sequecne of their neighbours. Meaning if we are querying a vector ABCD we want to search first for an exact match ABCD (a point in the same region), if there isnt we go from the bottom bup, we search ABDC.
 
 If there isnt where do we go? Do we go AC-- or AD--? This one is obvious we go AC-- since it is closer to C than to B. ACBD -> ACDB -> BACD -> BADC -> CABD -> CADB. Therre is something interesting as the initial order of first neighbours also gives us the order in which to look for. This makes the search orderable which really is just indexing then. But. I cant. make. this. work.
 
 So far I've gor only a prefix tree. First level is the first neighbour {A,B,C,D} second level is {B, C, D} if the path goes thorugh A. Good thisng about this is that we cant stop the serach early on if we know that there are no points that start with AD-- in the tree. Im very worried about speed and memory here thgouh.
+
+### Option 2 -  Bisection Ranking
+While the prefix tree might be optimal in time, I'm worried about accuracy. Imagine a point next to the region boundary. Its closest neighbour might be on the other side and we would mark that neighbour has k-th instead of first.
+
+If accuracy is low another one to try is calculating the distance from the query point to each bisector of every pair of vertexes. That will give us a measure of how far away he is from the region boundary. We can rank this Bij bisectors and start searching on the regions that are = query_permuatation permuted by ij. Etc this might be acutally incredibly accurate. the only drawback is that we have to compute 16*16=256 distances which is not horrible but a step in a slower direction. 
 
 # Stats
 Assume `n` points in a `d` dimensional vector space with `k=16` marks. 
@@ -49,12 +56,10 @@ Assume `n` points in a `d` dimensional vector space with `k=16` marks.
     - The more accurate the algorithm is the faster it is since the main bottleneck is tree search.
 
 # Todo
-### Theory
     - [ ] Find more about hyperplane arranjements and simplexes.
     - [ ] Find data structure. Compressed prefix tree seems apropriate but maybe there's better.
     - [ ] Figure out query algorithm. Prefix tree search could work on O(k) -> O(1) but memory overhead seems inapropriate. There has to be a smarter way.
     - [ ] Need a good PCA. Not problematic since its at index creation.
-### Testing
     - [ ] Test something other than the mean for simplex center.   
     - [ ] Test limit of 16 point partition in n-dimensional space
     - [ ] Test simplex structure. Compare with:
