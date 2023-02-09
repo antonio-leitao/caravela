@@ -1,51 +1,19 @@
-use std::collections::VecDeque;
 use std::time::Instant;
 
-fn closest_nodes(root: usize, n: usize, adjacency_list: &Vec<Vec<usize>>) -> Vec<usize> {
-    let mut queue = VecDeque::new();
-    let mut visited = vec![false; adjacency_list.len()];
-    let mut result = vec![];
-
-    queue.push_back(root);
-    visited[root] = true;
-
-    while let Some(node) = queue.pop_front() {
-        result.push(node);
-
-        if result.len() == n {
-            break;
-        }
-
-        for &neighbor in &adjacency_list[node] {
-            if !visited[neighbor] {
-                queue.push_back(neighbor);
-                visited[neighbor] = true;
-            }
-        }
-    }
-
-    result
+fn flip_bit(num: u8, index: u8) -> u8 {
+    let mask = 1u8 << index;
+    num ^ mask
 }
 
 fn main() {
-    let n = 100000;
-    let m = 200000;
-    let n_tests = 10;
-    let root = 0;
-    let n_nodes = 10;
-
-    let mut adjacency_list = vec![Vec::new(); n];
-    for i in 0..m {
-        let a = (i * i + i) % n;
-        let b = (i * i * i + i * i) % n;
-        adjacency_list[a].push(b);
-    }
-
+    let num = 0b10101100;
+    let index = 3;
     let start = Instant::now();
-    for _ in 0..n_tests {
-        closest_nodes(root, n_nodes, &adjacency_list);
+    for _ in 0..1_000_000{
+        let result = flip_bit(num, index);
     }
-    let duration = start.elapsed();
-
-    println!("Elapsed time: {:?}", duration);
+    let elapsed = start.elapsed();
+    //println!("Before flipping bit: {:08b}", num);
+    //println!("After flipping bit:  {:08b}", result);
+    println!("Time elapsed: {:?}", elapsed);
 }
