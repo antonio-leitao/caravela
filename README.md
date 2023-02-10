@@ -41,7 +41,12 @@ So far I've gor only a prefix tree. First level is the first neighbour {A,B,C,D}
 ### Option 2 -  Bisection Ranking
 While the prefix tree might be optimal in time, I'm worried about accuracy. Imagine a point next to the region boundary. Its closest neighbour might be on the other side and we would mark that neighbour has k-th instead of first.
 
-If accuracy is low another one to try is calculating the distance from the query point to each bisector of every pair of vertexes. That will give us a measure of how far away he is from the region boundary. We can rank this Bij bisectors and start searching on the regions that are = query_permuatation permuted by ij. Etc this might be acutally incredibly accurate. the only drawback is that we have to compute 16*16=256 distances which is not horrible but a step in a slower direction. 
+If accuracy is low another one to try is calculating the distance from the query point to each bisector of every pair of vertexes. That will give us a measure of how far away he is from the region boundary. We can rank this Bij bisectors and start searching on the regions that are = query_permuatation permuted by ij. Etc this might be acutally incredibly accurate. the only drawback is that we have to compute 16*16=256 distances which is not horrible but a step in a slower direction.
+
+The hyperplanes can be calculated at index part but query still has 256 calculations of high dimensional datasets
+
+>**Note**Actually this is possible by calculating the difference betwen the distance to point a and poitnB since it will be the same if the pointis in the hyperplane. Order all the distances and we are good to go.
+
 
 # Stats
 Assume `n` points in a `d` dimensional vector space with `k=16` marks. 
@@ -71,5 +76,9 @@ Assume `n` points in a `d` dimensional vector space with `k=16` marks.
     - [ ] Figure out arranjement for dimensions less than 15. Maybe revisit PCA with 2 points per pc (original idea)
     - [ ] Test effect of amplitude and component weights (even though equidistance seems a must).
 
-
+# Routines
+    - [x] Permutations to binary.
+    - [x] Identity Hash
+    - [ ] Weighted hamming
+    
 

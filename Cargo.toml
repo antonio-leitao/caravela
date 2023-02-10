@@ -14,3 +14,4 @@ keywords = ["machine learning","nearest neighbors"]
 
 [dependencies]
 nohash-hasher = "*"
+rand="*"
