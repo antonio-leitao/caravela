@@ -13,5 +13,5 @@ keywords = ["machine learning","nearest neighbors"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-nohash-hasher = "*"
+nohash-hasher = "0.2.0"
 rand="*"

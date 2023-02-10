@@ -25,27 +25,41 @@ It seems to me that as long as we make sure that the data is contained in the si
 
 Currently each vertex of the simplex is positioned along the first 16 direction of the PCA, centerd in the mean of the data at the distance of the amplitude of the data. This might change altough it doesnt seem to affect much the results.
 
+# Indexing
+Use PCA to get 16 principal components and place simplex at center of data (mean).
+For each point:
+1. Calculate distance to simplexes
+2. Calculate binary representation of permutation
+3. While binary is not 00000..00:
+    - Check if it exists in the data.
+    - if yes -> add just the point id
+    - if no ->
+    - Iterate through every point and check if they are a transposition
+    - if yes -> add itself as a neighbour
+    - keep track of neighbours
+    - Add point to hash with list of found transpositions.
+
+
+
 # Query
 
-Necessary first step is to find the distance to each of the 16 vertexes and order the result. Finding an exact match is as simple as accessing some array with that vector as index. The problem is searching.
+1. Measure distance of point to simplexes.
+2. Calculate vector of weights wij = |d1 - d2| (inverse)
+3. Calculate binary vector
 
-This is the tricky part. We dont want to search. Obvious choice is to just access some index. But i really dont see how. Best candidate has been the prefix tree let me show how:
+**Positioning**
+1. While binary is not 00000..00:
+2. Check if binary exists in graph:
+3. If not remove last 1.
 
-### Option 1 - Prefix Tree
-Each vector is encoded as the sequecne of their neighbours. Meaning if we are querying a vector ABCD we want to search first for an exact match ABCD (a point in the same region), if there isnt we go from the bottom bup, we search ABDC.
-
-If there isnt where do we go? Do we go AC-- or AD--? This one is obvious we go AC-- since it is closer to C than to B. ACBD -> ACDB -> BACD -> BADC -> CABD -> CADB. Therre is something interesting as the initial order of first neighbours also gives us the order in which to look for. This makes the search orderable which really is just indexing then. But. I cant. make. this. work.
-
-So far I've gor only a prefix tree. First level is the first neighbour {A,B,C,D} second level is {B, C, D} if the path goes thorugh A. Good thisng about this is that we cant stop the serach early on if we know that there are no points that start with AD-- in the tree. Im very worried about speed and memory here thgouh.
-
-### Option 2 -  Bisection Ranking
-While the prefix tree might be optimal in time, I'm worried about accuracy. Imagine a point next to the region boundary. Its closest neighbour might be on the other side and we would mark that neighbour has k-th instead of first.
-
-If accuracy is low another one to try is calculating the distance from the query point to each bisector of every pair of vertexes. That will give us a measure of how far away he is from the region boundary. We can rank this Bij bisectors and start searching on the regions that are = query_permuatation permuted by ij. Etc this might be acutally incredibly accurate. the only drawback is that we have to compute 16*16=256 distances which is not horrible but a step in a slower direction.
-
-The hyperplanes can be calculated at index part but query still has 256 calculations of high dimensional datasets
-
->**Note**Actually this is possible by calculating the difference betwen the distance to point a and poitnB since it will be the same if the pointis in the hyperplane. Order all the distances and we are good to go.
+**Search**
+1. For point in neighbour, if not in evaluated, add to BinaryHeap.
+{important question, is it better to evaluate again or query the BinaryHeap? (fundamental and requires testing)}
+2. For point in
+2. If current node is better than all BinaryHeaps
+    - Add current node to "accepted"
+    - Add current node to visisted
+    - Move to minimum of BinaryHeap
 
 
 # Stats
@@ -79,6 +93,8 @@ Assume `n` points in a `d` dimensional vector space with `k=16` marks.
 # Routines
     - [x] Permutations to binary.
     - [x] Identity Hash
+    - [x] is_transposition
     - [ ] Weighted hamming
-    
+    - [ ] 
+
 

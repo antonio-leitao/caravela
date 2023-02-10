@@ -1,64 +1,35 @@
-
-// use std::time::Instant;
-
-// const N: usize = 16;
-
-
-// fn main() {
-//     let start = Instant::now();
-//     let permutation: Vec<u8> = (0..16).collect();
-//     let mut binary: Vec<u8> = vec![];
-//     for i in 0..N{
-//         for j in i..N{
-//             if permutation[i]>permutation[j]{
-//                 binary.push(0);
-//             }
-//             else {
-//                 binary.push(1);
-//             }
-//         }
-//     }
-//     println!("{:.3}",binary.len());
-//     println!("Array iteration time: {:?}", start.elapsed());
-// }
-
-
+mod utils;
+mod distances;
 use std::time::Instant;
 
-const N: usize = 16;
+const K:usize=16;
+const N:usize=2000;
 
-fn fast_approach(permutation: &[usize]) -> Vec<usize> {
-    let mut binary = vec![0; N * (N - 1) / 2];
-    let mut count = vec![0; N];
 
-    for &x in permutation.iter() {
-        for i in (x + 1)..N {
-            count[i] += 1;
+//receives a permutation array and turns it into a u128 vector
+fn pack_vector_to_u128(vector: &[usize]) -> u128 {
+    let mut packed: u128 = 0;
+    for i in 0..vector.len() {
+        for j in i + 1..vector.len() {
+            packed <<= 1;
+            if vector[i] > vector[j] {
+                packed |= 1;
+            }
         }
     }
-
-    let mut index = 0;
-    for i in 0..N {
-        for j in (i + 1)..N {
-            binary[index] = count[j];
-            index += 1;
-        }
-    }
-
-    binary
+    packed
 }
 
-fn main() {
-    let start = Instant::now();
-    let permutation: Vec<usize> = (0..N).collect();
-    let binary = fast_approach(&permutation);
-    println!("{:?}", binary);
-    println!("Fast approach time: {:?}", start.elapsed());
 
-    let start = Instant::now();
-    let mut binary: Vec<u8> = vec![];
-    for i in 0..N {
-        for j in i+1..N {
+fn main(){
+   let permutations = utils::random_permutations(N,K);
+   println!("{:?}",permutations[0]);
+
+   let start = Instant::now();
+   let mut binary: Vec<u8> = vec![];
+   for permutation in &permutations{
+    for i in 0..K {
+        for j in i+1..K {
             if permutation[i] > permutation[j] {
                 binary.push(0);
             } else {
@@ -66,6 +37,48 @@ fn main() {
             }
         }
     }
-    println!("{:.3}", binary.len());
-    println!("Array iteration time: {:?}", start.elapsed());
+   }
+    println!("Vector: {:?}", start.elapsed());
+
+
+    let start = Instant::now();
+   for permutation in &permutations{
+    let mut binary: [u8; 120] = [0; 120];
+    let mut index:usize =0;
+    for i in 0..K {
+        for j in i+1..K {
+            if permutation[i] > permutation[j] {
+                binary[index]=0;
+            } else {
+                binary[index]=1;
+            }
+        index +=1
+        }
+    }
+   }
+    println!("Array: {:?}", start.elapsed());
+
+    let start = Instant::now();
+    for permutation in &permutations{
+        let mut binary: [u8; 120] = [0; 120];
+        let mut index: usize = 0;
+        for i in 0..K {
+            for j in i+1..K {
+                binary[index] = (permutation[i] > permutation[j]) as u8;
+                index += 1;
+            }
+        }
+    }
+    println!("Array optimized: {:?}", start.elapsed());
+
+
+    let start = Instant::now();
+    for permutation in &permutations{
+        _ = pack_vector_to_u128(permutation)
+    }
+    println!("Bitwise: {:?}", start.elapsed());
+
 }
+
+
+
