@@ -15,3 +15,4 @@ keywords = ["machine learning","nearest neighbors"]
 [dependencies]
 nohash-hasher = "0.2.0"
 rand="*"
+hashbrown = "0.13"
