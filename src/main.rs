@@ -121,14 +121,20 @@ impl Index {
     }
 }
 
+use std::time::Instant;
+
+
 fn main(){
     let mut index:Index = Index::new();
-    const N:usize = 2000;
+    const N:usize = 20000;
     const K:usize =16;
     let permutations = utils::random_permutations(N,K);
+    let start = Instant::now();
     for (data_point,permutation) in permutations.iter().enumerate(){
        index.insert(permutation_to_u128(&permutation),data_point);
     }
+    println!("Version 1: {:?}", start.elapsed());
+    println!("Index has: {:?} entries", index.nodes.len());
 }
 
 
