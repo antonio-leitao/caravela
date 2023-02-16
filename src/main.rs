@@ -1,140 +1,75 @@
 
-mod utils;
+// use std::time::Instant;
+// use rand::Rng;
 
-fn permutation_to_u128(vector: &[usize]) -> u128 {
-    let mut packed: u128 = 0;
-    for i in 0..vector.len() {
-        for j in i + 1..vector.len() {
-            packed <<= 1;
-            if vector[i] > vector[j] {
-                packed |= 1;
-            }
-        }
-    }
-    packed
-}
+// fn select_32_bits() -> impl Fn(u128) -> u32 {
+//     let mut rng = rand::thread_rng();
+//     let shift = rng.gen_range(0..97);
+//     let mask = 0xFFFF_FFFFu128 << shift;
+//     move |v| ((v & mask) >> shift) as u32
+// }
 
-fn path_from_origin(mut x: u128) -> impl Iterator<Item = u128> {
-    let mut flips = Vec::new();
-    while x > 0 {
-        flips.push(x);
-        x = flip_last_one_to_zero(x);
-    }
-    flips.into_iter().rev()
-}
+// fn main() {
+//     let value: u128 = 0x1234_5678_9ABC_DEF0_1111_2222_3333_4444;
+//     let random_hash = select_32_bits();
+//     let start = Instant::now();
+//     for _ in 0..1_000_000 {
+//         _=random_hash(value)
+//     }
+//     println!("{:?}",start.elapsed());
 
-fn flip_last_one_to_zero(n: u128) -> u128 {
-    n & (n - 1)
-}
+// }
 
-
-fn all_transpositions(mut n: u128) -> impl Iterator<Item = u128> {
-    let mut mask = 1;
-    let mut flips = Vec::new();
-    while n > 0 {
-        flips.push(n ^ mask);
-        mask <<= 1;
-        n >>= 1;
-    }
-    flips.into_iter()
-}
-
-#[derive(Debug, Hash, Eq, PartialEq, Clone)]
-struct Node {
-    id: u128,
-    data_points: Vec<usize>,
-    neighbours: Vec<usize>,
-}
-
-struct Index {
-    nodes: Vec<Node>,
-    index_map: hashbrown::HashMap<u128, usize>,
-}
-
-impl Index {
-    fn new() -> Self {
-        let mut index = Index {
-            nodes: Vec::new(),
-            index_map: hashbrown::HashMap::new(),
-        };
-
-        //indclude origin at start
-        index.add_permutation(Node {
-            id: 0,
-            data_points:Vec::new(),
-            neighbours: Vec::new(),
-        });
-
-        index
-    }
-
-    fn add_permutation(&mut self, node: Node) {
-        let id = node.id;
-        self.nodes.push(node);
-        let index = self.nodes.len() - 1;
-        self.index_map.insert(id, index);
-    }
-
-    fn add_subpermutation(&mut self, subpermutation: u128, data_points: Vec<usize>) {
-        let mut neighbours: Vec<usize> = Vec::new();
-        let subpermutation_index = self.nodes.len() - 1;
-        for transposition in all_transpositions(subpermutation) {
-            match self.index_map.get(&transposition) {
-                Some(index) => {
-                    //if exists add indexes to both
-                    self.nodes[*index].neighbours.push(subpermutation_index);
-                    neighbours.push(*index);
-                }
-                None => continue,
-            }
-        }
-        self.add_permutation(Node {
-            id: subpermutation,
-            data_points:data_points,
-            neighbours: neighbours,
-        });
-    }
-
-    fn add_new_permutation(&mut self, permutation: u128, data_point: usize) {
-        //add all subpermutations from origin to permutation
-        for subpermutation in path_from_origin(permutation){
-            let mut data_points=Vec::new();
-            if subpermutation==permutation{
-                data_points.push(data_point);
-            }
-            self.add_subpermutation(subpermutation, data_points);
-        }
-    }
-
-    fn insert(&mut self, permutation:u128, data_point: usize) {
-        //check if permutation exists
-        match self.index_map.get(&permutation) {
-            Some(index) => {
-                //if it does add data point to it
-                self.nodes[*index].data_points.push(data_point);
-            }
-            None => {
-                //else add permutation
-                self.add_new_permutation(permutation, data_point);
-            }
-        }
-    }
-}
-
+use nohash_hasher::BuildNoHashHasher;
+use std::collections::HashMap;
 use std::time::Instant;
 
-
 fn main(){
-    let mut index:Index = Index::new();
-    const N:usize = 20000;
-    const K:usize =16;
-    let permutations = utils::random_permutations(N,K);
-    let start = Instant::now();
-    for (data_point,permutation) in permutations.iter().enumerate(){
-       index.insert(permutation_to_u128(&permutation),data_point);
+    println!("----- HashMap (with its default SipHash hasher) -----------");
+let hm: HashMap<i32, i32> = (0..1_000_000).map(|i| (i, i)).collect();
+for _k in 0..6 {
+    let t0 = Instant::now();
+    let mut sum: i64 = 0;
+    for i in 0..1_000_000 {
+        if let Some(x) = hm.get(&i) {
+            sum += *x as i64;
+        }
     }
-    println!("Version 1: {:?}", start.elapsed());
-    println!("Index has: {:?} entries", index.nodes.len());
+    let elapsed = t0.elapsed().as_secs_f64();
+    println!("The sum is: {}. Time elapsed: {:.3} sec", sum, elapsed);
 }
 
+println!("----- HashMap (with HashBrown hasher) -----------");
+let hm: hashbrown::HashMap<i32, i32> = (0..1_000_000).map(|i| (i, i)).collect();
+for _k in 0..6 {
+    let t0 = Instant::now();
+    let mut sum: i64 = 0;
+    for i in 0..1_000_000 {
+        if let Some(x) = hm.get(&i) {
+            sum += *x as i64;
+        }
+    }
+    let elapsed = t0.elapsed().as_secs_f64();
+    println!("The sum is: {}. Time elapsed: {:.3} sec", sum, elapsed);
+}
+
+
+println!("----- HashMap/BuildNoHashHasher (nohash-hasher 0.2.0) -----");
+let hm: HashMap<u64, u64, BuildNoHashHasher<u64>> = (0..1_000_000).map(|i| (i, i)).collect();
+
+
+for _k in 0..6 {
+    let t0 = Instant::now();
+    let mut sum: i64 = 0;
+    for i in 0..1_000_000 {
+        
+        if let Some(x) = hm.get(&i) {
+            sum += *x as i64;
+        }
+    }
+    let elapsed = t0.elapsed().as_secs_f64();
+    println!("The sum is: {}. Time elapsed: {:.3} sec", sum, elapsed);
+}
+
+}
 
