@@ -14,19 +14,10 @@ fn permutation_to_u128(vector: &[usize]) -> u128 {
     packed
 }
 
-fn path_from_origin(mut x: u128) -> impl Iterator<Item = u128> {
-    let mut flips = Vec::new();
-    while x > 0 {
-        flips.push(x);
-        x = flip_last_one_to_zero(x);
-    }
-    flips.into_iter().rev()
+fn is_transposition(a: u128, b: u128) -> bool {
+    let xor = a ^ b;
+    xor.count_ones() == 1
 }
-
-fn flip_last_one_to_zero(n: u128) -> u128 {
-    n & (n - 1)
-}
-
 
 fn all_transpositions(mut n: u128) -> impl Iterator<Item = u128> {
     let mut mask = 1;
@@ -75,36 +66,36 @@ impl Index {
         self.index_map.insert(id, index);
     }
 
-    fn add_subpermutation(&mut self, subpermutation: u128, data_points: Vec<usize>) {
+    fn add_new_permutation(&mut self, permutation: u128, data_point: usize) {
         let mut neighbours: Vec<usize> = Vec::new();
-        let subpermutation_index = self.nodes.len() - 1;
-        for transposition in all_transpositions(subpermutation) {
+        let permutation_index = self.nodes.len() - 1;
+        // for node in &mut self.nodes{
+        //     if !is_transposition(permutation, node.id){
+        //         continue
+        //     }
+        //     node.neighbours.push(permutation_index);
+        //     let index = self.index_map.get(&node.id).unwrap();
+        //     neighbours.push(*index);
+            
+        // }
+
+        for transposition in all_transpositions(permutation) {
             match self.index_map.get(&transposition) {
                 Some(index) => {
                     //if exists add indexes to both
-                    self.nodes[*index].neighbours.push(subpermutation_index);
+                    self.nodes[*index].neighbours.push(permutation_index);
                     neighbours.push(*index);
                 }
                 None => continue,
             }
         }
         self.add_permutation(Node {
-            id: subpermutation,
-            data_points:data_points,
+            id: permutation,
+            data_points:vec![data_point],
             neighbours: neighbours,
         });
     }
 
-    fn add_new_permutation(&mut self, permutation: u128, data_point: usize) {
-        //add all subpermutations from origin to permutation
-        for subpermutation in path_from_origin(permutation){
-            let mut data_points=Vec::new();
-            if subpermutation==permutation{
-                data_points.push(data_point);
-            }
-            self.add_subpermutation(subpermutation, data_points);
-        }
-    }
 
     fn insert(&mut self, permutation:u128, data_point: usize) {
         //check if permutation exists
@@ -126,7 +117,7 @@ use std::time::Instant;
 
 fn main(){
     let mut index:Index = Index::new();
-    const N:usize = 20000;
+    const N:usize = 200000;
     const K:usize =16;
     let permutations = utils::random_permutations(N,K);
     let start = Instant::now();
@@ -135,6 +126,12 @@ fn main(){
     }
     println!("Version 1: {:?}", start.elapsed());
     println!("Index has: {:?} entries", index.nodes.len());
+    println!("{:?}", index.nodes[0]);
+    let mut count=0;
+    for node in index.nodes{
+        if node.neighbours.len()>0{
+            count+=1
+        }
+    }
+    println!("number of elemnts with neighbours {}", count)
 }
-
-
