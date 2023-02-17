@@ -1,13 +1,7 @@
 
 // use std::time::Instant;
-// use rand::Rng;
 
-// fn select_32_bits() -> impl Fn(u128) -> u32 {
-//     let mut rng = rand::thread_rng();
-//     let shift = rng.gen_range(0..97);
-//     let mask = 0xFFFF_FFFFu128 << shift;
-//     move |v| ((v & mask) >> shift) as u32
-// }
+
 
 // fn main() {
 //     let value: u128 = 0x1234_5678_9ABC_DEF0_1111_2222_3333_4444;
@@ -20,56 +14,53 @@
 
 // }
 
-use nohash_hasher::BuildNoHashHasher;
-use std::collections::HashMap;
-use std::time::Instant;
+use std::time::{Duration,Instant};
+mod indexes;
+mod utils;
+
+fn permutation_to_u128(vector: &[usize]) -> u128 {
+    let mut packed: u128 = 0;
+    for i in 0..vector.len() {
+        for j in i + 1..vector.len() {
+            packed <<= 1;
+            if vector[i] > vector[j] {
+                packed |= 1;
+            }
+        }
+    }
+    packed
+}
+
+
+
 
 fn main(){
-    println!("----- HashMap (with its default SipHash hasher) -----------");
-let hm: HashMap<i32, i32> = (0..1_000_000).map(|i| (i, i)).collect();
-for _k in 0..6 {
-    let t0 = Instant::now();
-    let mut sum: i64 = 0;
-    for i in 0..1_000_000 {
-        if let Some(x) = hm.get(&i) {
-            sum += *x as i64;
-        }
+    let mut index:indexes::Index32::Index32 = indexes::Index32::Index32::new(20);
+    const N:usize = 200000;
+    let query_points:usize =1000;
+    const K:usize =16;
+    let permutations = utils::random_permutations(N,K);
+    
+    for (data_point,permutation) in permutations.iter().enumerate(){
+       index.insert(permutation_to_u128(&permutation),data_point);
     }
-    let elapsed = t0.elapsed().as_secs_f64();
-    println!("The sum is: {}. Time elapsed: {:.3} sec", sum, elapsed);
-}
 
-println!("----- HashMap (with HashBrown hasher) -----------");
-let hm: hashbrown::HashMap<i32, i32> = (0..1_000_000).map(|i| (i, i)).collect();
-for _k in 0..6 {
-    let t0 = Instant::now();
-    let mut sum: i64 = 0;
-    for i in 0..1_000_000 {
-        if let Some(x) = hm.get(&i) {
-            sum += *x as i64;
-        }
-    }
-    let elapsed = t0.elapsed().as_secs_f64();
-    println!("The sum is: {}. Time elapsed: {:.3} sec", sum, elapsed);
-}
+    let queries = utils::random_permutations(query_points,K);
+    let mut total_time = Duration::new(0, 0);
+    let mut count:u32 =0;
 
-
-println!("----- HashMap/BuildNoHashHasher (nohash-hasher 0.2.0) -----");
-let hm: HashMap<u64, u64, BuildNoHashHasher<u64>> = (0..1_000_000).map(|i| (i, i)).collect();
-
-
-for _k in 0..6 {
-    let t0 = Instant::now();
-    let mut sum: i64 = 0;
-    for i in 0..1_000_000 {
+    for permutation in queries.iter(){
+        let start_time = Instant::now();
+        let candidates = index.query(permutation_to_u128(&permutation));
         
-        if let Some(x) = hm.get(&i) {
-            sum += *x as i64;
-        }
-    }
-    let elapsed = t0.elapsed().as_secs_f64();
-    println!("The sum is: {}. Time elapsed: {:.3} sec", sum, elapsed);
+        let elapsed_time = start_time.elapsed();
+        total_time += elapsed_time;
+        count+=candidates.len() as u32;
+     }
+     let avg_time = total_time / query_points as u32;
+     let avg_pool = count as f32 / query_points as f32;
+     println!(
+         "Average time per query: {:.2?}, Average pool size: {:.2}",
+         avg_time, avg_pool
+     );
 }
-
-}
-
