@@ -1,5 +1,5 @@
-use rand::Rng;
 use nohash_hasher::BuildNoHashHasher;
+use rand::Rng;
 use std::collections::HashMap;
 
 // fn select_64_bits() ->  Box<dyn Fn(u128) -> u64>{
@@ -8,7 +8,6 @@ use std::collections::HashMap;
 //     let mask = 0xFFFF_FFFFu128 << shift;
 //     Box::new(move |v| ((v & mask) >> shift) as u64)
 // }
-
 
 // fn select_32_bits() -> impl Fn(u128) -> u32 {
 //     let mut rng = rand::thread_rng();
@@ -30,7 +29,6 @@ use std::collections::HashMap;
 //     let mask = 0xFFFF_FFFFu128 << shift;
 //     move |v| ((v & mask) >> shift) as u8
 // }
-
 
 // pub struct Index {
 //     maps: Vec<HashMap::<u64, Vec<usize>, BuildNoHashHasher<u64>>>,
@@ -72,7 +70,7 @@ use std::collections::HashMap;
 //             }
 
 //         }
-       
+
 //     }
 
 //     pub fn query(&mut self, permutation:u128) -> hashbrown::HashSet<usize>{
@@ -96,7 +94,7 @@ use std::collections::HashMap;
 // }
 
 trait HashFn {
-    fn hash(&self, _:u128) -> u64;
+    fn hash(&self, _: u128) -> u64;
 }
 
 struct Select64Bits;
@@ -109,8 +107,6 @@ impl HashFn for Select64Bits {
         ((v & mask) >> shift) as u64
     }
 }
-
-
 
 pub struct Index64 {
     maps: Vec<HashMap<u64, Vec<usize>, BuildNoHashHasher<u64>>>,
@@ -135,9 +131,9 @@ impl Index64 {
         };
         index
     }
-    pub fn insert(&mut self, permutation:u128, data_point: usize) {
+    pub fn insert(&mut self, permutation: u128, data_point: usize) {
         //check if permutation exists
-        for i in 0..self.n_hashes{
+        for i in 0..self.n_hashes {
             let hash = self.functions[i].hash(permutation);
             match self.maps[i].get_mut(&hash) {
                 Some(data_points) => {
@@ -149,24 +145,22 @@ impl Index64 {
                     self.maps[i].insert(hash, vec![data_point]);
                 }
             }
-
         }
-       
     }
 
-    pub fn query(&mut self, permutation:u128) -> hashbrown::HashSet<usize>{
-        let mut candidates:hashbrown::HashSet<usize> =hashbrown::HashSet::new();
-        for i in 0..self.n_hashes{
+    pub fn query(&mut self, permutation: u128) -> hashbrown::HashSet<usize> {
+        let mut candidates: hashbrown::HashSet<usize> = hashbrown::HashSet::new();
+        for i in 0..self.n_hashes {
             let hash = self.functions[i].hash(permutation);
             match self.maps[i].get(&hash) {
                 Some(data_points) => {
-                    for point in data_points{
+                    for point in data_points {
                         candidates.insert(*point);
                     }
                 }
                 None => {
                     //else add permutation
-                    continue
+                    continue;
                 }
             }
         }

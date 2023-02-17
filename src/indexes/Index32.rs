@@ -1,5 +1,5 @@
-use rand::Rng;
 use nohash_hasher::BuildNoHashHasher;
+use rand::Rng;
 use std::collections::HashMap;
 
 // fn select_32_bits() -> impl Fn(u128) -> u32 {
@@ -23,9 +23,8 @@ use std::collections::HashMap;
 //     move |v| ((v & mask) >> shift) as u8
 // }
 
-
 trait HashFn {
-    fn hash(&self, _:u128) -> u32;
+    fn hash(&self, _: u128) -> u32;
 }
 
 struct Select32Bits;
@@ -38,8 +37,6 @@ impl HashFn for Select32Bits {
         ((v & mask) >> shift) as u32
     }
 }
-
-
 
 pub struct Index32 {
     maps: Vec<HashMap<u32, Vec<usize>, BuildNoHashHasher<u32>>>,
@@ -64,9 +61,9 @@ impl Index32 {
         };
         index
     }
-    pub fn insert(&mut self, permutation:u128, data_point: usize) {
+    pub fn insert(&mut self, permutation: u128, data_point: usize) {
         //check if permutation exists
-        for i in 0..self.n_hashes{
+        for i in 0..self.n_hashes {
             let hash = self.functions[i].hash(permutation);
             match self.maps[i].get_mut(&hash) {
                 Some(data_points) => {
@@ -78,24 +75,22 @@ impl Index32 {
                     self.maps[i].insert(hash, vec![data_point]);
                 }
             }
-
         }
-       
     }
 
-    pub fn query(&mut self, permutation:u128) -> hashbrown::HashSet<usize>{
-        let mut candidates:hashbrown::HashSet<usize> =hashbrown::HashSet::new();
-        for i in 0..self.n_hashes{
+    pub fn query(&mut self, permutation: u128) -> hashbrown::HashSet<usize> {
+        let mut candidates: hashbrown::HashSet<usize> = hashbrown::HashSet::new();
+        for i in 0..self.n_hashes {
             let hash = self.functions[i].hash(permutation);
             match self.maps[i].get(&hash) {
                 Some(data_points) => {
-                    for point in data_points{
+                    for point in data_points {
                         candidates.insert(*point);
                     }
                 }
                 None => {
                     //else add permutation
-                    continue
+                    continue;
                 }
             }
         }

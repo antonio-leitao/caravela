@@ -1,7 +1,6 @@
 use rand::seq::SliceRandom;
 use rand::{thread_rng, Rng};
 
-
 pub fn generate_random_points(n_points: usize, dimensions: usize) -> Vec<Vec<f64>> {
     let mut rng = thread_rng();
     let mut points = Vec::with_capacity(n_points);
