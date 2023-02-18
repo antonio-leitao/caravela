@@ -141,7 +141,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let n_queries = 1_000;
     for n_samples in [
-        1_000, 2_000, 5_000, 10_000, 20_000, 50_000, 100_000, 200_000, 500_000,
+        1_000, 2_000, 5_000, 10_000, 20_000, 50_000, 100_000, 200_000,
     ] {
         for n_hashes in [1, 2, 5, 10, 20, 50, 100] {
             let (time, pool) = run_metrics64(n_samples, n_queries, n_hashes);
