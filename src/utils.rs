@@ -27,7 +27,7 @@ pub fn random_permutations(n: usize, k: usize) -> Vec<Vec<usize>> {
 }
 
 //receives a permutation array and turns it into a u128 vector
-pub fn pack_vector_to_u128(vector: &[usize]) -> u128 {
+pub fn permutation_to_u128(vector: &[usize]) -> u128 {
     let mut packed: u128 = 0;
     for i in 0..vector.len() {
         for j in i + 1..vector.len() {
@@ -39,3 +39,4 @@ pub fn pack_vector_to_u128(vector: &[usize]) -> u128 {
     }
     packed
 }
+

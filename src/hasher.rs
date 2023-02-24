@@ -1,5 +1,6 @@
 use std::hash::BuildHasher;
 use std::collections::HashMap;
+use std::time::Instant;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 
@@ -97,3 +98,19 @@ fn test_random_bit_selection() {
     let second_random = random_u128_mask(num_ones);
     assert_ne!(first_random, second_random, "Bit selection is not random");
 }
+
+#[test]
+fn test_hasher_time(){
+    let mask:u128 = random_u128_mask(32);
+    let mut distilled :u64=0;
+    let t0 = Instant::now();
+    for i in 0..1_000_000{
+        distilled+=apply_mask_fast(i, mask)  as u64;
+    }
+    let elapsed = t0.elapsed().as_secs_f64();
+    assert!(elapsed<0.25);
+    assert!(distilled>1);
+
+}
+
+
