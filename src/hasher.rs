@@ -113,4 +113,35 @@ fn test_hasher_time(){
 
 }
 
+fn extract_bits(input: u8, mask: u8) -> u8 {
+    let mask_bits = mask.count_ones();
+    let all_bits_except_mask = (!(mask)) << (8 - mask_bits);
+    input & all_bits_except_mask
+}
+
+#[test]
+fn test_extract_bits_1() {
+    let input = 0b0110;
+    let mask = 0b1100;
+    let expected_output = 0b0001;
+    assert_eq!(extract_bits(input, mask), expected_output);
+}
+
+#[test]
+fn test_extract_bits_2() {
+    let input = 0b1100;
+    let mask = 0b1001;
+    let expected_output = 0b0010;
+    assert_eq!(extract_bits(input, mask), expected_output);
+}
+
+#[test]
+fn test_extract_bits_3() {
+    let input = 0b0111;
+    let mask = 0b0110;
+    let expected_output = 0b0011;
+    assert_eq!(extract_bits(input, mask), expected_output);
+}
+
+
 
