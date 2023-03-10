@@ -82,39 +82,87 @@ fn masked_hash(mask: u128, input: u128) -> u64 {
     h1 ^ h2
 }
 
+
+fn fallback_pext_u128(value: u128, mask: u128) -> u128 {
+    const LOG2_BITSIZE: u32 = 7;  // log2 of the bit size (here, 128 bits)
+
+    let mut mask = mask;
+    let mut value = value & mask;  // clear irrelevant bits
+    let mut mk = !mask << 1;  // we will count 0's to the right
+    let mut mp: u128;
+    let mut mv: u128;
+    let mut t: u128;
+
+    for i in 0..LOG2_BITSIZE {
+        mp = mk ^ (mk << 1);  // parallel suffix
+        mp = mp ^ (mp << 2);
+        mp = mp ^ (mp << 4);
+        mp = mp ^ (mp << 8);
+        mp = mp ^ (mp << 16);
+        mp = mp ^ (mp << 32);
+        mp = mp ^ (mp << 64);
+
+        mv = mp & mask;  // bits to move
+        mask = (mask ^ mv) | (mv >> (1 << i));  // compress mask
+        t = value & mv;
+        value = (value ^ t) | (t >> (1 << i));  // compress value
+        mk &= !mp;
+    }
+
+    value
+}
+
+#[test]
+fn test_n_bits(){
+    let n_bits = 64;
+    let value = u128::MAX;
+    let mask = random_u128_mask(n_bits);
+    let hash = fallback_pext_u128(value, mask);
+
+    assert_eq!(hash.count_ones(), n_bits as u32);
+}
+
+
 fn main(){
-    println!("----- Random XOR mask -----------");
-    let n_bits:usize = 64;
-    for _k in 0..6 {
-        let mask = random_u128_mask(n_bits);
-        let t0 = Instant::now();
-        let mut sum: u128 = 0;
-        for input in 0..1_000_000 {
-            let x = masked_hash(mask, input);
-                sum += x as u128;
+    // println!("----- Random XOR mask -----------");
+    // let n_bits:usize = 64;
+    // for _k in 0..6 {
+    //     let mask = random_u128_mask(n_bits);
+    //     let t0 = Instant::now();
+    //     let mut sum: u128 = 0;
+    //     for input in 0..1_000_000 {
+    //         let x = masked_hash(mask, input);
+    //             sum += x as u128;
             
+    //     }
+    //     let elapsed = t0.elapsed().as_secs_f64();
+    //     println!("The sum is: {}. Time elapsed: {:.3} sec", sum, elapsed);
+    // }
+
+    // println!("----- Direct index extraction -----------");
+    // let n_bits:usize = 64;
+    // for _k in 0..6 {
+    //     let index_list = generate_non_repeated_sequence(n_bits);
+    //     let t0 = Instant::now();
+    //     let mut sum: u128 = 0;
+    //     for input in 0..1_000_000 {
+    //         let x = extract_bits_at_indexes(&index_list, input);
+    //             sum += x as u128;
+            
+    //     }
+    //     let elapsed = t0.elapsed().as_secs_f64();
+    //     println!("The sum is: {}. Time elapsed: {:.3} sec", sum, elapsed);
+    // }
+
+        let value = 0x123456789abcdef0123456789abcdef;
+        let mask = 0x00ff00ff00ff00ff00ff00ff00ff00ff;
+        let mut sum:u128 =0;
+        let t0 = Instant::now();
+        for _ in 0..1_000_000 {
+               sum += fallback_pext_u128(value, mask);
         }
         let elapsed = t0.elapsed().as_secs_f64();
         println!("The sum is: {}. Time elapsed: {:.3} sec", sum, elapsed);
-    }
-
-    println!("----- Direct index extraction -----------");
-    let n_bits:usize = 64;
-    for _k in 0..6 {
-        let index_list = generate_non_repeated_sequence(n_bits);
-        let t0 = Instant::now();
-        let mut sum: u128 = 0;
-        for input in 0..1_000_000 {
-            let x = extract_bits_at_indexes(&index_list, input);
-                sum += x as u128;
-            
-        }
-        let elapsed = t0.elapsed().as_secs_f64();
-        println!("The sum is: {}. Time elapsed: {:.3} sec", sum, elapsed);
-    }
-
-
-
     
     // println!("----- HashMap (with its default SipHash hasher) -----------");
     // let hm: HashMap<i32, i32> = (0..1_000_000).map(|i| (i, i)).collect();
@@ -130,19 +178,19 @@ fn main(){
     //     println!("The sum is: {}. Time elapsed: {:.3} sec", sum, elapsed);
     // }
     
-    // println!("----- HashMap (with HashBrown hasher) -----------");
-    // let hm: hashbrown::HashMap<i32, i32> = (0..1_000_000).map(|i| (i, i)).collect();
-    // for _k in 0..6 {
-    //     let t0 = Instant::now();
-    //     let mut sum: i64 = 0;
-    //     for i in 0..1_000_000 {
-    //         if let Some(x) = hm.get(&i) {
-    //             sum += *x as i64;
-    //         }
-    //     }
-    //     let elapsed = t0.elapsed().as_secs_f64();
-    //     println!("The sum is: {}. Time elapsed: {:.3} sec", sum, elapsed);
-    // }
+    println!("----- HashMap (with HashBrown hasher) -----------");
+    let hm: hashbrown::HashMap<u128, u128> = (0..1_000_000).map(|i| (i, i)).collect();
+    for _k in 0..6 {
+        let t0 = Instant::now();
+        let mut sum: i64 = 0;
+        for i in 0..1_000_000 {
+            if let Some(x) = hm.get(&i) {
+                sum += *x as i64;
+            }
+        }
+        let elapsed = t0.elapsed().as_secs_f64();
+        println!("The sum is: {}. Time elapsed: {:.3} sec", sum, elapsed);
+    }
     
     
     // println!("----- HashMap/BuildNoHashHasher (nohash-hasher 0.2.0) -----");
