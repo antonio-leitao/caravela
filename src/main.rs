@@ -210,25 +210,25 @@ fn main(){
     //     println!("The sum is: {}. Time elapsed: {:.3} sec", sum, elapsed);
     // }
 
-    // println!("----- HashMap/IndexHasher (u64) -----");
-    // let mut hm:try_hasher::IndexHasher<u64> = try_hasher::IndexHasher::new(54); 
+    println!("----- HashMap/IndexHasher (u64) -----");
+    let mut hm:try_hasher::IndexHasher<u64> = try_hasher::IndexHasher::new(54); 
     
-    // for i in 0..1_000_000{
-    //     hm.insert(u128::from(i),i)
-    // }
+    for i in 0..1_000_000{
+        hm.insert(u128::from(i),i)
+    }
 
-    // for _k in 0..6 {
-    //     let t0 = Instant::now();
-    //     let mut sum: i64 = 0;
-    //     for i in 0..1_000_000u64 {
+    for _k in 0..6 {
+        let t0 = Instant::now();
+        let mut sum: i64 = 0;
+        for i in 0..1_000_000u64 {
             
-    //         if let Some(x) = hm.get(u128::from(i)) {
-    //             sum += *x as i64;
-    //         }
-    //     }
-    //     let elapsed = t0.elapsed().as_secs_f64();
-    //     println!("The sum is: {}. Time elapsed: {:.3} sec", sum, elapsed);
-    // }
+            if let Some(x) = hm.get(u128::from(i)) {
+                sum += *x as i64;
+            }
+        }
+        let elapsed = t0.elapsed().as_secs_f64();
+        println!("The sum is: {}. Time elapsed: {:.3} sec", sum, elapsed);
+    }
 
     
 }
