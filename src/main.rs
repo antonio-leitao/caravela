@@ -31,6 +31,37 @@ fn extract_bits_at_indexes(indexes: &[u8], input: u128) -> u64 {
     result
 }
 
+// fn random_u128_mask(num_ones: usize) -> u128 {
+//     let mut rng = thread_rng();
+//     let mut indices: Vec<usize> = (0..128 as usize).collect();
+//     indices.shuffle(&mut rng);
+//     indices.truncate(num_ones as usize);
+
+//     let mut bits: u128 = 0;
+//     for i in indices {
+//         bits |= 1 << i;
+//     }
+//     bits
+// }
+
+// fn apply_mask_and_hash(mask: u128, input: u128) -> u64 {
+//     let masked_input = mask & input;
+//     hash_u128_to_u64(masked_input)
+// }
+
+// fn hash_u128_to_u64(x: u128) -> u64 {
+//     let h1: u64 = x as u64;
+//     let h2: u64 = (x >> 64) as u64;
+//     h1 ^ h2
+// }
+
+// #[test]
+// fn test_random_indexes(){
+//     let n_bits:usize = 54;
+//     let random_mask = random_u128_mask(n_bits);
+//     assert_eq!(random_mask.count_ones(),n_bits as u32,"generate appropriate vector");
+// }
+
 fn random_u128_mask(num_ones: usize) -> u128 {
     let mut rng = thread_rng();
     let mut indices: Vec<usize> = (0..128 as usize).collect();
@@ -44,40 +75,45 @@ fn random_u128_mask(num_ones: usize) -> u128 {
     bits
 }
 
-fn apply_mask_and_hash(mask: u128, input: u128) -> u64 {
+fn masked_hash(mask: u128, input: u128) -> u64 {
     let masked_input = mask & input;
-    hash_u128_to_u64(masked_input)
-}
-
-fn hash_u128_to_u64(x: u128) -> u64 {
-    let h1: u64 = x as u64;
-    let h2: u64 = (x >> 64) as u64;
+    let h1: u64 = masked_input as u64;
+    let h2: u64 = (masked_input >> 64) as u64;
     h1 ^ h2
 }
 
-#[test]
-fn test_random_indexes(){
-    let n_bits:usize = 54;
-    let random_mask = random_u128_mask(n_bits);
-    assert_eq!(random_mask.count_ones(),n_bits as u32,"generate appropriate vector");
-}
-
-
-
 fn main(){
+    println!("----- Random XOR mask -----------");
     let n_bits:usize = 64;
     for _k in 0..6 {
         let mask = random_u128_mask(n_bits);
         let t0 = Instant::now();
         let mut sum: u128 = 0;
         for input in 0..1_000_000 {
-            let x = apply_mask_and_hash(mask, input);
+            let x = masked_hash(mask, input);
                 sum += x as u128;
             
         }
         let elapsed = t0.elapsed().as_secs_f64();
         println!("The sum is: {}. Time elapsed: {:.3} sec", sum, elapsed);
     }
+
+    println!("----- Direct index extraction -----------");
+    let n_bits:usize = 64;
+    for _k in 0..6 {
+        let index_list = generate_non_repeated_sequence(n_bits);
+        let t0 = Instant::now();
+        let mut sum: u128 = 0;
+        for input in 0..1_000_000 {
+            let x = extract_bits_at_indexes(&index_list, input);
+                sum += x as u128;
+            
+        }
+        let elapsed = t0.elapsed().as_secs_f64();
+        println!("The sum is: {}. Time elapsed: {:.3} sec", sum, elapsed);
+    }
+
+
 
     
     // println!("----- HashMap (with its default SipHash hasher) -----------");
@@ -127,7 +163,7 @@ fn main(){
     // }
 
     // println!("----- HashMap/IndexHasher (u64) -----");
-    // let mut hm:try_hasher::IndexHasher<u64> = try_hasher::IndexHasher::new(generate_non_repeated_sequence(64)); 
+    // let mut hm:try_hasher::IndexHasher<u64> = try_hasher::IndexHasher::new(54); 
     
     // for i in 0..1_000_000{
     //     hm.insert(u128::from(i),i)
@@ -146,17 +182,5 @@ fn main(){
     //     println!("The sum is: {}. Time elapsed: {:.3} sec", sum, elapsed);
     // }
 
-    // for _k in 0..6 {
-    //     let t0 = Instant::now();
-    //     let mut sum: i64 = 0;
-    //     for i in 0..1_000_000u64 {
-
-    //         let x = extract_bits_at_indexes(&index_list, u128::from(i));
-    //         sum += x as i64;
-
-    //     }
-    //     let elapsed = t0.elapsed().as_secs_f64();
-    //     println!("The sum is: {}. Time elapsed: {:.3} sec", sum, elapsed);
-    // }
     
 }

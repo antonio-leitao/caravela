@@ -1,46 +1,49 @@
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 
-// fn extract_bits_at_indexes(indexes: &[u8], input: u128) -> u64 {
-//     let mut result: u64 = 0;
-//     for (i, &index) in indexes.iter().enumerate() {
-//         if input & (1u128 << index) != 0 {
-//             result |= 1 << i;
-//         }
-//     }
-//     result
-// }
+fn random_u128_mask(num_ones: usize) -> u128 {
+    let mut rng = thread_rng();
+    let mut indices: Vec<usize> = (0..128 as usize).collect();
+    indices.shuffle(&mut rng);
+    indices.truncate(num_ones as usize);
+
+    let mut bits: u128 = 0;
+    for i in indices {
+        bits |= 1 << i;
+    }
+    bits
+}
+
+fn masked_hash(mask: u128, input: u128) -> u64 {
+    let masked_input = mask & input;
+    let h1: u64 = masked_input as u64;
+    let h2: u64 = (masked_input >> 64) as u64;
+    h1 ^ h2
+}
 
 pub struct IndexHasher<T>{
-    index_list: Vec<u8>,
+    mask: u128,
     map: nohash_hasher::IntMap<u64, T>
 }
 
 impl<T> IndexHasher<T> {
-    pub fn new(index_list: Vec<u8>) -> IndexHasher<T> {
+    pub fn new(n_bits: usize) -> IndexHasher<T> {
         IndexHasher {
-            index_list,
+            mask : random_u128_mask(n_bits),
             map: nohash_hasher::IntMap::default(),
         }
     }
 
-    fn extract_bits_at_indexes(&self, input: u128) -> u64{
-        let mut result: u64 = 0;
-        for (i, &index) in self.index_list.iter().enumerate() {
-            if input & (1u128 << index) != 0 {
-                result |= 1 << i;
-            }
-        }
-        result
-    }
 
     pub fn insert(&mut self, input: u128, value: T) {
-        let key = self.extract_bits_at_indexes(input);
+        let key = masked_hash(self.mask,input);
         self.map.insert(key,value);
         //let index = self.map.entry(key).or_default();
         //index.push(value);
     }
 
     pub fn get(&self, input: u128) -> Option<&T> {
-        let key = self.extract_bits_at_indexes(input);
+        let key = masked_hash(self.mask,input);
         self.map.get(&key)
     }
     
