@@ -35,12 +35,12 @@ impl<T> IndexHasher<T> {
     }
 
     pub fn insert(&mut self, input: u128, value: T) {
-        let key = input ^ self.mask;
+        let key = input & self.mask;
         self.map.insert(key,value);
     }
 
     pub fn get(&self, input: u128) -> Option<&T> {
-        let key = input ^ self.mask;
+        let key = input & self.mask;
         self.map.get(&key)
     }
     
