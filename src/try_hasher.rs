@@ -14,13 +14,6 @@ fn random_u128_mask(num_ones: usize) -> u128 {
     bits
 }
 
-// fn masked_hash(mask: u128, input: u128) -> u64 {
-//     let masked_input = mask & input;
-//     let h1: u64 = masked_input as u64;
-//     let h2: u64 = (masked_input >> 64) as u64;
-//     h1 ^ h2
-// }
-
 pub struct IndexHasher<T>{
     mask: u128,
     map: hashbrown::HashMap<u128, T>
