@@ -14,14 +14,14 @@ fn random_u128_mask(num_ones: usize) -> u128 {
     bits
 }
 
-pub struct IndexHasher<T>{
+pub struct MaskHash<T>{
     mask: u128,
     map: hashbrown::HashMap<u128, T>
 }
 
-impl<T> IndexHasher<T> {
-    pub fn new(n_bits: usize) -> IndexHasher<T> {
-        IndexHasher {
+impl<T> MaskHash<T> {
+    pub fn new(n_bits: usize) ->MaskHash<T> {
+        MaskHash {
             mask : random_u128_mask(n_bits),
             map: hashbrown::HashMap::new()
         }

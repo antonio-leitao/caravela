@@ -1,4 +1,5 @@
-mod try_hasher;
+mod mask_hasher;
+mod index;
 mod utils;
 mod distances;
 use std::time::Instant;
@@ -13,7 +14,7 @@ fn main(){
     let data = utils::generate_random_points(n_points, dimensions);
     let simplex = utils::generate_random_points(16, dimensions);
     
-    let mut hm:try_hasher::IndexHasher<usize> = try_hasher::IndexHasher::new(n_bits);
+    let mut hm:mask_hasher::MaskHash<usize> = mask_hasher::MaskHash::new(n_bits);
 
     let t0 = Instant::now();
     //calculate distance to simplex
