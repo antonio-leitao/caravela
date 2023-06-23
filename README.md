@@ -40,7 +40,6 @@ For each point:
     - Add point to hash with list of found transpositions.
 
 
-
 # Query
 
 1. Measure distance of point to simplexes.

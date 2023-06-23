@@ -17,3 +17,5 @@ nohash-hasher = "0.2.0"
 rand="*"
 hashbrown = "0.13"
 csv="*"
+ndarray = "0.14"
+ndarray-linalg = { version = "0.13", features = ["openblas-static"] }

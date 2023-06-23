@@ -14,7 +14,7 @@ pub fn generate_random_points(n_points: usize, dimensions: usize) -> Vec<Vec<f64
     points
 }
 
-fn random_permutations(n: usize, k: usize) -> Vec<Vec<usize>> {
+pub fn random_permutations(n: usize, k: usize) -> Vec<Vec<usize>> {
     let mut rng = thread_rng();
     let mut result = vec![];
 
@@ -25,44 +25,6 @@ fn random_permutations(n: usize, k: usize) -> Vec<Vec<usize>> {
     }
     result
 }
-
-//receives a permutation array and turns it into a u128 vector
-pub fn distances_to_u128(vector: &[f64]) -> u128 {
-    let mut packed: u128 = 0;
-    for i in 0..vector.len() {
-        for j in i + 1..vector.len() {
-            packed <<= 1;
-            if vector[i] > vector[j] {
-                packed |= 1;
-            }
-        }
-    }
-    packed
-}
-
-// fn generate_non_repeated_sequence(n:usize) -> Vec<u8> {
-//     let mut rng = rand::thread_rng();
-//     let mut used_numbers = HashSet::new();
-//     let mut numbers:Vec<u8> = Vec::new();
-//     while numbers.len() < n {
-//         let number = (0..128).choose(&mut rng).unwrap();
-//         if used_numbers.insert(number) {
-//             numbers.push(number);
-//         }
-//     }
-//     numbers
-// }
-
-// fn extract_bits_at_indexes(indexes: &[u8], input: u128) -> u64 {
-//     let mut result: u64 = 0;
-//     for (i, &index) in indexes.iter().enumerate() {
-//         if input & (1u128 << index) != 0 {
-//             result |= 1 << i;
-//         }
-//     }
-//     result
-// }
-
 
 pub fn random_u128_mask(num_ones: usize) -> u128 {
     let mut rng = thread_rng();
