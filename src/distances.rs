@@ -1,12 +1,3 @@
-pub fn euclidean(a: &[f32], b: &[f32]) -> f32 {
-    let mut sum: f32 = 0.0;
-    for (a_i, b_i) in a.iter().zip(b) {
-        let diff = a_i - b_i;
-        sum += diff * diff;
-    }
-    sum.sqrt()
-}
-
 //revert distances
 fn revert_ij(k: i32, n: i32) -> (usize, usize) {
     let sqrt_val = f32::sqrt((-8 * k + 4 * n * (n - 1) - 7) as f32);
