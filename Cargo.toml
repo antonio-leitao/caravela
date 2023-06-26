@@ -11,6 +11,15 @@ license="Apache 2.0"
 keywords = ["machine learning","nearest neighbors"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "caravela"
+# "cdylib" is necessary to produce a shared library for Python to import from.
+crate-type = ["cdylib"]
+
+[dependencies.pyo3]
+version = "0.18.0"
+# "abi3-py37" tells pyo3 (and maturin) to build using the stable ABI with minimum Python version 3.7
+features = ["abi3-py37"]
 
 [dependencies]
 nohash-hasher = "0.2.0"
