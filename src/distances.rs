@@ -21,7 +21,3 @@ pub fn heuristic_euclidean(v1: u128, v2: u128, weights: &[f32]) -> f32 {
     }
     f32::sqrt(result)
 }
-
-pub fn hamming(v1: u128, v2: u128) -> u32 {
-    (v1 ^ v2).count_ones()
-}

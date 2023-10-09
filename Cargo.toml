@@ -13,7 +13,6 @@ keywords = ["machine learning","nearest neighbors"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
 name = "caravela"
-# "cdylib" is necessary to produce a shared library for Python to import from.
 crate-type = ["cdylib"]
 
 [dependencies.pyo3]
@@ -23,8 +22,8 @@ features = ["abi3-py37"]
 
 [dependencies]
 nohash-hasher = "0.2.0"
+triple_accel="*"
 rand="*"
 hashbrown = "0.13"
-csv="*"
 ndarray = "0.14"
 ndarray-linalg = { version = "0.13", features = ["openblas-static"] }

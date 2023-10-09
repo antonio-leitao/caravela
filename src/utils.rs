@@ -26,16 +26,3 @@ pub fn random_permutations(n: usize, k: usize) -> Vec<Vec<usize>> {
     }
     result
 }
-
-pub fn random_u128_mask(num_ones: usize) -> u128 {
-    let mut rng = thread_rng();
-    let mut indices: Vec<usize> = (0..128 as usize).collect();
-    indices.shuffle(&mut rng);
-    indices.truncate(num_ones as usize);
-
-    let mut bits: u128 = 0;
-    for i in indices {
-        bits |= 1 << i;
-    }
-    bits
-}
