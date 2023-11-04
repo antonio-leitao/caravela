@@ -1,28 +1,20 @@
-//ALL OF THIS CAN GO TO THE TRASH!
-use rand::seq::SliceRandom;
-use rand::{thread_rng, Rng};
+use rand::Rng;
 
-pub fn generate_random_points(n_points: usize, dimensions: usize) -> Vec<Vec<f64>> {
-    let mut rng = thread_rng();
-    let mut points = Vec::with_capacity(n_points);
-    for _ in 0..n_points {
-        let mut point = Vec::with_capacity(dimensions);
-        for _ in 0..dimensions {
-            point.push(rng.gen::<f64>());
-        }
-        points.push(point);
-    }
-    points
+fn generate_random_matrix(rows: usize, cols: usize) -> Vec<Vec<f64>> {
+    let mut rng = rand::thread_rng();
+    (0..rows)
+        .map(|_| (0..cols).map(|_| rng.gen_range(-10.0..10.0)).collect())
+        .collect()
 }
 
-pub fn random_permutations(n: usize, k: usize) -> Vec<Vec<usize>> {
-    let mut rng = thread_rng();
-    let mut result = vec![];
-
-    for _ in 0..n {
-        let mut permutation = (0..k).collect::<Vec<_>>();
-        permutation.shuffle(&mut rng);
-        result.push(permutation);
-    }
-    result
-}
+// pub fn random_permutations(n: usize, k: usize) -> Vec<Vec<usize>> {
+//     let mut rng = thread_rng();
+//     let mut result = vec![];
+//
+//     for _ in 0..n {
+//         let mut permutation = (0..k).collect::<Vec<_>>();
+//         permutation.shuffle(&mut rng);
+//         result.push(permutation);
+//     }
+//     result
+// }

@@ -1,4 +1,5 @@
-use nohash_hasher::IntMap;
+use nohash_hasher::{IntMap,IntSet};
+use std::collections::hash_map::Entry;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use triple_accel::hamming;
@@ -42,6 +43,39 @@ impl<T> DistHash<T> {
     }
 }
 
+// MAIN HASHER
+pub struct MainHash {
+    mask: u128,
+    map: hashbrown::HashMap<u128, IntSet<usize>>,
+}
+
+impl MainHash {
+    pub fn new(n_bits: usize) -> MainHash {
+        MainHash {
+            mask: random_u128_mask(n_bits),
+            map: hashbrown::HashMap::new(),
+        }
+    }
+
+    pub fn insert(&mut self, input: u128, value: usize) {
+        let key = input & self.mask;
+        match self.map.entry(key) {
+            Entry::Vacant(entry) => {
+                let mut new_set = IntSet::new();
+                new_set.insert(value);
+                entry.insert(new_set);
+            }
+            Entry::Occupied(mut entry) => {
+                entry.insert(value);
+            }
+        }
+    }
+
+    pub fn get(&self, input: u128) -> Option<&IntSet<usize>> {
+        let key = input & self.mask;
+        self.map.get(&key)
+    }
+}
 // MASK HASHER
 pub struct MaskHash<T> {
     mask: u128,

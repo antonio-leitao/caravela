@@ -1,9 +1,9 @@
-use hashbrown::HashMap;
-use ndarray::*;
-use ndarray_linalg::*;
+use ndarray::{Array2,Array1};
 use pyo3::prelude::*;
+mod anchors;
 mod distances;
 mod hashers;
+mod utils;
 //###################### PYTHON INTERFACE ##########################
 //Anything inside this section is exposed to python
 #[pymodule]
@@ -16,7 +16,7 @@ fn caravela(_py: Python, m: &PyModule) -> PyResult<()> {
 
 #[pyclass(name = "Caravela")]
 struct Caravela {
-    nodes: HashMap<Vec<usize>, usize>,
+    nodes: Vec<hashers::MainHash>,
     simplex: Option<Array2<f64>>, //it is option because it might not be fit
     anchors: Vec<usize>,
 }
@@ -27,7 +27,7 @@ impl Caravela {
     #[pyo3(signature = (anchors))]
     fn new(anchors: Vec<usize>) -> Self {
         Caravela {
-            nodes: HashMap::new(),
+            nodes: Vec::new(),
             simplex: None,
             anchors,
         }
@@ -52,15 +52,34 @@ impl Caravela {
 //Here should be methods and stuff that will not be exposed to Python
 impl Caravela {
     fn _fit(&mut self, data: Vec<Vec<f64>>) {
-        //can be slow
-        println!("Computing the 16 Anchors (PCA)"); //anchors.rs
-                                                    //has to be mega fast
-        println!("Computing the distance of each anchor"); // distance.rs
-        println!("Converting each point into a u128"); // (utils.rs)
-                                                       //can be slow
-        println!("Deciding the correct hashmaps"); // (hasher.rs)
-        println!("Adding the points to the hashmaps"); // hasher.rs
+        // can be slow
+        let cols = data[0].len();
+        let eigen = anchors::pca_simplex(&data);
+        let simplex = Array2::from_shape_vec(
+            (16, cols), eigen.into_iter().flatten().collect()
+        ).expect("Failed to Create shape vector");
+
+        let binaries:Vec<u128> = data
+            .into_iter()
+            .map(|point| {
+                let point_arr = Array1::from_vec(point);
+                let dist = distances::euclidean_distance(point_arr, &simplex);
+                distances::distances_to_u128(dist)
+            }).collect();
+
+        self.simplex = Some(simplex);
+        self._set_nodes(binaries);
     }
+
+    fn _set_nodes(&mut self, binaries: Vec<u128>) {
+        for n_bits in self.anchors.iter() {
+            let mut node = hashers::MainHash::new(*n_bits);
+            for (value, key) in binaries.iter().enumerate() {
+                node.insert(*key,value);  // Assuming you want to use the index as the value
+            }
+            self.nodes.push(node);
+        }
+   }
     fn _single_query(&self, point: Vec<f64>, n_neighbors: usize) -> Vec<usize> {
         println!("Computing the distance of each anchor"); //distance.rs
         println!("Converting each point into a u128"); // utils.rs

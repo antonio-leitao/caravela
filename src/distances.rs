@@ -1,14 +1,18 @@
-use ndarray::*;
-use ndarray_linalg::*;
+use ndarray::{Array1, Array2, Axis};
 
-pub fn euclidean_distances(point: &Array1<f64>, simplex: &Array2<f64>) -> Array1<f64> {
-    let diff = simplex - &point.broadcast(simplex.raw_dim()).unwrap();
-    let squared_dist = diff.mapv(|x| x * x);
-    let sum_squared_dist: Array1<f64> = squared_dist.sum_axis(Axis(1));
-    sum_squared_dist.mapv(f64::sqrt)
+pub fn euclidean_distance(point: Array1<f64>, simplex: &Array2<f64>) -> Array1<f64> {
+    // this funciton is mega fast the collect method slows it down by 10000% no joke
+    let distances: Array1<f64> = simplex
+        .axis_iter(Axis(0))
+        .map(|row| {
+            let diff = &row - &point;
+            diff.dot(&diff).sqrt()
+        })
+        .collect();
+    distances
 }
 
-pub fn distances_to_u128(vector: &Array1<f64>) -> u128 {
+pub fn distances_to_u128(vector: Array1<f64>) -> u128 {
     let mut flat: u128 = 0;
     let n = vector.len();
     for i in 0..n {
