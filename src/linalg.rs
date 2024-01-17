@@ -11,19 +11,25 @@
 
 extern crate nalgebra as na;
 
-pub fn pca_simplex(data: &Vec<Vec<f64>>) -> Vec<Vec<f64>>{
+/// This should be the only place nalgebra and ndarray
+pub fn pca_simplex(data: &Vec<Vec<f64>>) -> Vec<Vec<f64>> {
     // Convert input data to nalgebra matrix
     // let matrix = na::DMatrix::from_vec(data.len(), data[0].len(), data.clone().into_iter().flatten().collect());
     let matrix = na::DMatrix::from_vec(
-        data.len(), data[0].len(), data.iter().flat_map(|v| v).cloned().collect());
+        data.len(),
+        data[0].len(),
+        data.iter().flat_map(|v| v).cloned().collect(),
+    );
     // Compute the Singular Value Decomposition
-    let eigenvectors = matrix.svd(false, true).v_t.expect("Error Calculating the eigenvectors");
+    let eigenvectors = matrix
+        .svd(false, true)
+        .v_t
+        .expect("Error Calculating the eigenvectors");
     // Extract the first 16 columns of V^T as eigenvectors
-    let anchors: Vec<Vec<f64>> =eigenvectors
+    let anchors: Vec<Vec<f64>> = eigenvectors
         .fixed_rows::<16>(0)
         .row_iter()
-        .map(|row| row.iter().cloned().collect())
+        .map(|row| row.normalize().iter().cloned().collect())
         .collect();
     anchors
 }
-

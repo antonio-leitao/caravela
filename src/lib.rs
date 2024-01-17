@@ -1,9 +1,9 @@
-use ndarray::{Array2,Array1};
 use pyo3::prelude::*;
-mod anchors;
 mod distances;
-mod hashers;
+mod hasher;
+mod linalg;
 mod utils;
+use hasher::MaskMap;
 //###################### PYTHON INTERFACE ##########################
 //Anything inside this section is exposed to python
 #[pymodule]
@@ -16,9 +16,10 @@ fn caravela(_py: Python, m: &PyModule) -> PyResult<()> {
 
 #[pyclass(name = "Caravela")]
 struct Caravela {
-    nodes: Vec<hashers::MainHash>,
-    simplex: Option<Array2<f64>>, //it is option because it might not be fit
+    nodes: Vec<MaskMap>,
+    simplex: Option<Vec<Vec<f64>>>, //it is option because it might not be fit
     anchors: Vec<usize>,
+    n_entries: usize,
 }
 
 #[pymethods]
@@ -30,6 +31,7 @@ impl Caravela {
             nodes: Vec::new(),
             simplex: None,
             anchors,
+            n_entries: 0,
         }
     }
     #[pyo3(signature = (data))]
@@ -54,18 +56,15 @@ impl Caravela {
     fn _fit(&mut self, data: Vec<Vec<f64>>) {
         // can be slow
         let cols = data[0].len();
-        let eigen = anchors::pca_simplex(&data);
-        let simplex = Array2::from_shape_vec(
-            (16, cols), eigen.into_iter().flatten().collect()
-        ).expect("Failed to Create shape vector");
+        let simplex = linalg::pca_simplex(&data);
 
-        let binaries:Vec<u128> = data
+        let binaries: Vec<u128> = data
             .into_iter()
             .map(|point| {
-                let point_arr = Array1::from_vec(point);
-                let dist = distances::euclidean_distance(point_arr, &simplex);
-                distances::distances_to_u128(dist)
-            }).collect();
+                let dist = distances::cosine_distance(&point, &simplex);
+                distances::distances_to_u128(&dist)
+            })
+            .collect();
 
         self.simplex = Some(simplex);
         self._set_nodes(binaries);
@@ -73,13 +72,16 @@ impl Caravela {
 
     fn _set_nodes(&mut self, binaries: Vec<u128>) {
         for n_bits in self.anchors.iter() {
-            let mut node = hashers::MainHash::new(*n_bits);
+            let mask = utils::generate_random_sequence(*n_bits);
+            let mut node = MaskMap::new(mask);
             for (value, key) in binaries.iter().enumerate() {
-                node.insert(*key,value);  // Assuming you want to use the index as the value
+                node.insert(*key, value); // Assuming you want to use the index as the value
             }
             self.nodes.push(node);
         }
-   }
+        self.n_entries = binaries.len() //will be used if the user wants to insert more
+    }
+
     fn _single_query(&self, point: Vec<f64>, n_neighbors: usize) -> Vec<usize> {
         println!("Computing the distance of each anchor"); //distance.rs
         println!("Converting each point into a u128"); // utils.rs
