@@ -1,4 +1,8 @@
+use core::panic;
+use nohash_hasher::IntMap;
 use pyo3::prelude::*;
+use std::cmp::Reverse;
+use std::collections::BinaryHeap;
 mod distances;
 mod hasher;
 mod linalg;
@@ -41,7 +45,6 @@ impl Caravela {
     }
     #[pyo3(signature = (data,n_neighbors))]
     fn query(&mut self, data: Vec<Vec<f64>>, n_neighbors: usize) -> PyResult<Vec<Vec<usize>>> {
-        println!("Running batch query");
         let labels: Vec<Vec<usize>> = data
             .into_iter()
             .map(|point| self._single_query(point, n_neighbors))
@@ -55,14 +58,15 @@ impl Caravela {
 impl Caravela {
     fn _fit(&mut self, data: Vec<Vec<f64>>) {
         // can be slow
-        let cols = data[0].len();
         let simplex = linalg::pca_simplex(&data);
-
         let binaries: Vec<u128> = data
             .into_iter()
             .map(|point| {
-                let dist = distances::cosine_distance(&point, &simplex);
-                distances::distances_to_u128(&dist)
+                let distances: Vec<f64> = simplex
+                    .iter()
+                    .map(|row| distances::euclidean(row, &point))
+                    .collect();
+                distances::distances_to_u128(&distances)
             })
             .collect();
 
@@ -83,18 +87,46 @@ impl Caravela {
     }
 
     fn _single_query(&self, point: Vec<f64>, n_neighbors: usize) -> Vec<usize> {
-        println!("Computing the distance of each anchor"); //distance.rs
-        println!("Converting each point into a u128"); // utils.rs
-                                                       // different block
-        println!("Deciding which hashmaps to visit (maybe all)"); // (here/query)
-        println!("Getting candidates (counts vs approx distance)"); // (here/query)
-        println!("Ordering candidates (BTree?)"); //
-        println!("Return ordered candidates");
-        vec![2 as usize]
+        let simplex = match &self.simplex {
+            Some(simplex) => simplex,
+            None => panic!("Caravela has not been fit"), //Substitute with random index
+        };
+        let query = distances::get_position(&point, &simplex);
+
+        // BLOCK HERE MAYBE SEPARATE
+        let mut counts: IntMap<usize, usize> = IntMap::default();
+        for mask_map in self.nodes.iter() {
+            if let Some(int_set) = mask_map.get(query) {
+                for &value in int_set {
+                    *counts.entry(value).or_insert(0) += 1;
+                }
+            }
+        }
+
+        let mut heap = BinaryHeap::new();
+
+        for (index, count) in counts.into_iter() {
+            heap.push(Reverse((count, index)));
+            if heap.len() > n_neighbors {
+                heap.pop(); // Remove the least frequent.
+            }
+        }
+        heap.into_sorted_vec()
+            .into_iter()
+            .map(|Reverse(data)| data.1)
+            .collect::<Vec<_>>()
     }
-    fn _insert(&self, point: Vec<f64>) {
-        println!("Computing the distance of each anchor");
-        println!("Converting each point into a u128");
-        println!("Adding point to hashmaps");
+
+    fn _insert(&mut self, point: Vec<f64>) {
+        let simplex = match &self.simplex {
+            Some(simplex) => simplex,
+            None => panic!("Caravela has not been fit"), //Substitute with random index
+        };
+        let query = distances::get_position(&point, &simplex);
+
+        self.n_entries += 1;
+        for mask_map in self.nodes.iter_mut() {
+            mask_map.insert(query, self.n_entries)
+        }
     }
 }
