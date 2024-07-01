@@ -22,9 +22,5 @@ features = ["abi3-py37"]
 
 [dependencies]
 nohash-hasher = "0.2.0"
-hashbrown = "0.13"
-triple_accel = "0.4.0"
 rand = "0.8.5"
-nalgebra = "0.32.3"
-ndarray = "0.15.6"
 itertools = "0.11.0"

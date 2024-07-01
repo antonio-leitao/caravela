@@ -1,64 +1,83 @@
 import caravela
 import numpy as np
 import time
-import matplotlib.pyplot as plt
+import pandas as pd
+import os
+import argparse
 
 # Benchmark function
-def benchmark(data, queries, anchors, k=50, batch_size=20):
+def benchmark(data, queries, k=10):
     # generate random data
-    ann = caravela.Caravela(anchors)
+    ann = caravela.Caravela(16, data.shape[1])
     ann.fit(data)
-    recalls = []
-    query_times = []
 
-    # time entire query time
-    num_batches = (len(queries) + batch_size - 1) // batch_size
+    start_time = time.time()
+    neighbors = ann.query(queries, k, 100)
+    query_time = time.time() - start_time
 
-    for i in range(num_batches):
-        batch_queries = queries[i * batch_size : (i + 1) * batch_size]
-
-        start_time = time.time()
-        batch_neighbors = ann.query(batch_queries, k)
-        query_time = time.time() - start_time
-
-        recall = []
-        for j, query in enumerate(batch_queries):
-            # Calculate recall (using dummy ground truth for demonstration)
-            ground_truth = np.argsort(np.linalg.norm(data - query, axis=1))[:k]
-            recall.append(len(set(batch_neighbors[j]) & set(ground_truth)) / k)
-
-        recalls.append(np.mean(recall))
-        query_times.append(query_time / len(batch_queries))  # Average time per query
-
-    return recalls, query_times
+    recall = []
+    for j, query in enumerate(queries):
+        ground_truth = np.argsort(np.linalg.norm(data - query, axis=1))[:k]
+        recall.append(np.intersect1d(neighbors[j], ground_truth).shape[0] / k)
+    return np.mean(recall), query_time / len(queries)
 
 
-# Generate data and queries
+def append_to_csv(data, csv_file_path="benchmarks/data.csv"):
+    """
+    Appends a dictionary to the bottom of a CSV file. If the file does not exist, it creates one.
+
+    Parameters:
+    data (dict): Dictionary containing the data to append. Keys should match the columns of the CSV.
+    csv_file_path (str): Path to the CSV file.
+    """
+    # Check if the CSV file exists
+    if os.path.exists(csv_file_path):
+        # Read the existing CSV file
+        df = pd.read_csv(csv_file_path)
+    else:
+        # Create a new DataFrame if the CSV file does not exist
+        df = pd.DataFrame(columns=data.keys())
+    # Append the new data to the DataFrame
+    df = pd.concat([df, pd.DataFrame([data])], ignore_index=True)
+    # Save the DataFrame back to the CSV file
+    df.to_csv(csv_file_path, index=False)
+    print(f"Appended to CSV: {data}")
+
+
 def main():
-
-    X = np.random.uniform(size=(10000, 128))
-    Y = np.random.uniform(size=(100, 128))
-
-    param_list = [
-        {"label": "balanced", "anchors": [32, 16, 8]},
-        {"label": "all32", "anchors": [32, 32, 32]},
-        {"label": "all16", "anchors": [16, 16, 16]},
-    ]
-
-    plt.figure(figsize=(10, 7))
-    for params in param_list:
-        recalls, query_times = benchmark(X, Y, params["anchors"])
-        queries_per_second = [1.0 / qt for qt in query_times]
-        plt.plot(recalls, queries_per_second, marker="o", label=params["label"])
-
-    plt.xlabel("Recall")
-    plt.ylabel("Queries per second (1/s)")
-    plt.title(
-        "Recall-Queries per second (1/s) tradeoff - up and to the right is better"
+    # Set up argument parsing
+    parser = argparse.ArgumentParser(description="Append data to CSV.")
+    parser.add_argument(
+        "-m",
+        "--message",
+        type=str,
+        help="The string to be saved in the CSV.",
     )
-    plt.legend()
-    plt.grid(True)
-    plt.show()
+
+    # Parse the arguments
+    args = parser.parse_args()
+    # Data to append
+    np.random.seed(42)
+    # normalized search points
+    X = np.random.uniform(size=(100_000, 128))
+    X = X / np.linalg.norm(X, axis=1, keepdims=True)
+    # normalized query points
+    Y = np.random.uniform(size=(100, 128))
+    Y = Y / np.linalg.norm(Y, axis=1, keepdims=True)
+    recall, query_times = benchmark(X, Y)
+    # Check if the message argument is provided
+    if args.message:
+        data = {
+            "RECALL": recall,
+            "QUERYxSEC": 1.0 / query_times,
+            "TIMESTAMP": int(time.time()),
+            "COMMENT": args.message,
+        }
+        append_to_csv(data)
+    else:
+        print(f"RECALL: {recall} | QUERYxSEC: {1.0 / query_times}")
+
+    # Call the function
 
 
 if __name__ == "__main__":

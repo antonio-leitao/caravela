@@ -1,35 +1,51 @@
-// NDARRAY
-// pub fn pca_simplex(data: Vec<Vec<f64>>, k: usize) -> VecVec<<f64>> {
-//     // calculate the truncated singular value decomposition for 2 singular values
-//     let result = TruncatedSvd::new(data, TruncatedOrder::Largest)
-//         .decompose(k)
-//         .unwrap();
-//     // acquire singular values, left-singular vectors and right-singular vectors
-//     let (_, _, v_t) = result.values_vectors();
-//     v_t
-// }
+use std::cmp;
 
-extern crate nalgebra as na;
+pub fn euclidean_squared(x: &[f32], y: &[f32]) -> f32 {
+    let n = std::cmp::min(x.len(), y.len());
+    let (mut x, mut y) = (&x[..n], &y[..n]);
 
-/// This should be the only place nalgebra and ndarray
-pub fn pca_simplex(data: &Vec<Vec<f64>>) -> Vec<Vec<f64>> {
-    // Convert input data to nalgebra matrix
-    // let matrix = na::DMatrix::from_vec(data.len(), data[0].len(), data.clone().into_iter().flatten().collect());
-    let matrix = na::DMatrix::from_vec(
-        data.len(),
-        data[0].len(),
-        data.iter().flat_map(|v| v).cloned().collect(),
-    );
-    // Compute the Singular Value Decomposition
-    let eigenvectors = matrix
-        .svd(false, true)
-        .v_t
-        .expect("Error Calculating the eigenvectors");
-    // Extract the first 16 columns of V^T as eigenvectors
-    let anchors: Vec<Vec<f64>> = eigenvectors
-        .fixed_rows::<16>(0)
-        .row_iter()
-        .map(|row| row.normalize().iter().cloned().collect())
-        .collect();
-    anchors
+    let mut sum = 0.0;
+    while x.len() >= 8 {
+        sum += (x[0] - y[0]).powi(2)
+            + (x[1] - y[1]).powi(2)
+            + (x[2] - y[2]).powi(2)
+            + (x[3] - y[3]).powi(2)
+            + (x[4] - y[4]).powi(2)
+            + (x[5] - y[5]).powi(2)
+            + (x[6] - y[6]).powi(2)
+            + (x[7] - y[7]).powi(2);
+        x = &x[8..];
+        y = &y[8..];
+    }
+
+    // Take care of any left over elements (if len is not divisible by 8).
+    sum += x
+        .iter()
+        .zip(y.iter())
+        .fold(0.0, |acc, (&ex, &ey)| acc + (ex - ey).powi(2));
+    sum
+}
+
+pub fn dot(x: &[f64], y: &[f64]) -> f64 {
+    let n = cmp::min(x.len(), y.len());
+    let (mut x, mut y) = (&x[..n], &y[..n]);
+
+    let mut sum = 0.0;
+    while x.len() >= 8 {
+        sum += x[0] * y[0]
+            + x[1] * y[1]
+            + x[2] * y[2]
+            + x[3] * y[3]
+            + x[4] * y[4]
+            + x[5] * y[5]
+            + x[6] * y[6]
+            + x[7] * y[7];
+        x = &x[8..];
+        y = &y[8..];
+    }
+
+    // Take care of any left over elements (if len is not divisible by 8).
+    x.iter()
+        .zip(y.iter())
+        .fold(sum, |sum, (&ex, &ey)| sum + (ex * ey))
 }
