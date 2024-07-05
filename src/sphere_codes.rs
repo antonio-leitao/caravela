@@ -1,14 +1,14 @@
+use crate::linalg;
 use rand::distributions::Distribution;
-// const EPSILON: f64 = 1e-6; // Tolerance for floating-point comparisons
 
-pub fn optimize_points(n_points: usize, n_dimensions: usize) -> Vec<Vec<f32>> {
+pub fn generate(n_points: usize, n_dimensions: usize) -> Vec<Vec<f32>> {
     let mut rng = rand::thread_rng();
     let normal = rand::distributions::Standard;
 
     let mut points = Vec::with_capacity(n_points);
     for _ in 0..n_points {
         let mut point: Vec<f32> = normal.sample_iter(&mut rng).take(n_dimensions).collect();
-        let magnitude = point.iter().map(|&x| x * x).sum::<f32>().sqrt();
+        let magnitude = linalg::dot(&point,&point).sqrt();
         for x in &mut point {
             *x /= magnitude;
         }
@@ -22,10 +22,8 @@ pub fn optimize_points(n_points: usize, n_dimensions: usize) -> Vec<Vec<f32>> {
     for _ in 0..iterations {
         let mut forces = vec![vec![0.0; n_dimensions]; n_points];
         for i in 0..n_points {
-            for j in (i + 1)..n_points {
-                let diff: Vec<f32> = points[i]
-                    .iter()
-                    .zip(&points[j])
+            for j in (i+1)..n_points {
+                let diff: Vec<f32> = points[i].iter().zip(&points[j])
                     .map(|(&a, &b)| a - b)
                     .collect();
                 let dist_sq: f32 = diff.iter().map(|&x| x * x).sum();
@@ -41,7 +39,7 @@ pub fn optimize_points(n_points: usize, n_dimensions: usize) -> Vec<Vec<f32>> {
             for k in 0..n_dimensions {
                 points[i][k] += step_size * forces[i][k];
             }
-            let magnitude = points[i].iter().map(|&x| x * x).sum::<f32>().sqrt();
+            let magnitude = linalg::dot(&points[i],&points[i]).sqrt();
             for x in &mut points[i] {
                 *x /= magnitude;
             }
@@ -50,3 +48,4 @@ pub fn optimize_points(n_points: usize, n_dimensions: usize) -> Vec<Vec<f32>> {
 
     points
 }
+

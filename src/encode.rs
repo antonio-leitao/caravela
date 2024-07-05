@@ -1,48 +1,41 @@
 use crate::linalg;
-use crate::Caravela;
+use crate::{Caravela, EncodedPoint, NUM_CHUNKS};
+const NUM_SELECTION: usize = 32;
 
-const FACTORIAL: [u32; 9] = [1, 1, 2, 6, 24, 120, 720, 5040, 40320];
-
-#[inline(always)]
-fn rank_permutation(perm: &[usize; 8]) -> u32 {
-    let mut used = 0u16;
-    let mut rank = 0;
-
-    for (i, &p) in perm.iter().enumerate() {
-        let smaller = (0..p).filter(|&x| used & (1 << x) == 0).count();
-        rank += (smaller as u32) * FACTORIAL[7 - i];
-        used |= 1 << p;
-    }
-
-    rank
+fn encode_chunk(point: &[f32], pivots: &[Vec<f32>]) -> u64 {
+    let mut distances: Vec<(f32, usize)> = pivots
+        .iter()
+        .enumerate()
+        .map(|(i, pivot)| {
+            let distance = 1.0 - linalg::dot(point, pivot);
+            (distance, i)
+        })
+        .collect();
+    distances.sort_unstable_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+    distances
+        .iter()
+        .take(NUM_SELECTION)
+        .fold(0u64, |acc, &(_, index)| acc | (1u64 << index))
 }
 
 pub trait Encode {
-    fn _encode(&self, point: &[f32]) -> u32;
+    fn _encode(&self, point: &[f32]) -> EncodedPoint;
 }
 
 impl Encode for Caravela {
-    /// Function to find the indices of the k closest neighbors based on Hamming distance
-    fn _encode(&self, point: &[f32]) -> u32 {
-        let mut distances_with_indices: [(f32, usize); 16] = self
-            .simplex
-            .iter()
-            .enumerate()
-            .map(|(i, row)| (linalg::euclidean_squared(row, point), i))
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap();
+    fn _encode(&self, point: &[f32]) -> EncodedPoint {
+        let mut encoded = [0u64; NUM_CHUNKS];
+        let chunk_size = point.len() / NUM_CHUNKS;
 
-        distances_with_indices
-            .sort_unstable_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
-
-        let first_half: [usize; 8] = distances_with_indices[..8]
-            .iter()
-            .map(|&(_, index)| index)
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap();
-
-        rank_permutation(&first_half)
+        for (i, chunk_pivots) in self.pivots.iter().enumerate() {
+            let start = i * chunk_size;
+            let end = if i == NUM_CHUNKS - 1 {
+                point.len()
+            } else {
+                start + chunk_size
+            };
+            encoded[i] = encode_chunk(&point[start..end], chunk_pivots);
+        }
+        encoded
     }
 }

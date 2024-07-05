@@ -24,3 +24,4 @@ features = ["abi3-py37"]
 nohash-hasher = "0.2.0"
 rand = "0.8.5"
 itertools = "0.11.0"
+rayon = "1.10.0"

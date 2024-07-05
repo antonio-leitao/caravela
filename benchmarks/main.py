@@ -8,17 +8,18 @@ import argparse
 # Benchmark function
 def benchmark(data, queries, k=10):
     # generate random data
-    ann = caravela.Caravela(16, data.shape[1])
+    ann = caravela.Caravela(data.shape[1])
     ann.fit(data)
 
     start_time = time.time()
-    neighbors = ann.query(queries, k, 100)
+    neighbors = ann.query(queries, k)
     query_time = time.time() - start_time
 
     recall = []
     for j, query in enumerate(queries):
-        ground_truth = np.argsort(np.linalg.norm(data - query, axis=1))[:k]
-        recall.append(np.intersect1d(neighbors[j], ground_truth).shape[0] / k)
+        ground_truth = np.argsort(1 - np.dot(data, query))[:k]
+        _recall = np.intersect1d(neighbors[j], ground_truth).shape[0] / k
+        recall.append(_recall)
     return np.mean(recall), query_time / len(queries)
 
 
@@ -59,7 +60,7 @@ def main():
     # Data to append
     np.random.seed(42)
     # normalized search points
-    X = np.random.uniform(size=(100_000, 128))
+    X = np.random.uniform(size=(200_000, 128))
     X = X / np.linalg.norm(X, axis=1, keepdims=True)
     # normalized query points
     Y = np.random.uniform(size=(100, 128))
