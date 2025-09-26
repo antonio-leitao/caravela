@@ -7,9 +7,9 @@
   <p><i>High performance Linear algebra primitives in Rust<br/>
   Optimzed for modern SIMD architectures<br/>
   Built fully in Rust</i><br/></p>
-  <p>
-<img alt="Pepy Total Downlods" src="https://img.shields.io/pepy/dt/caravela?style=for-the-badge&logo=python&labelColor=white&color=blue">
-  </p>
+  <!-- <p> -->
+<!-- <img alt="Pepy Total Downlods" src="https://img.shields.io/pepy/dt/caravela?style=for-the-badge&logo=python&labelColor=white&color=blue"> -->
+<!--   </p> -->
 </div>
 
 #
@@ -174,7 +174,6 @@ Caravela implements state-of-the-art algorithms for maximum performance:
 - **BLIS Algorithm**: 5-level nested loops with cache blocking
 - **Optimized Microkernels**: Hand-tuned SIMD kernels for AVX2 and NEON
 - **Cache-Aware Design**: Multi-level blocking (L1/L2/L3) for optimal data reuse
-- **Performance**: 85-95% of theoretical peak FLOPS on modern CPUs
 
 ### GEMV (Matrix-Vector)
 
@@ -187,23 +186,6 @@ Caravela implements state-of-the-art algorithms for maximum performance:
 - **SIMD Utilization**: Full width vectors (256-bit AVX2, 128-bit NEON)
 - **Performance**: Near memory bandwidth limits for large vectors
 
-## Benchmarks
-
-Run the comprehensive benchmark suite:
-
-```bash
-# All benchmarks
-cargo bench
-
-# Specific operations
-cargo bench --bench gemm
-cargo bench --bench gemv
-cargo bench --bench dot
-
-# Compare with naive implementations
-cargo bench "vs_naive"
-```
-
 ## Architecture Support
 
 - **x86_64**: Requires AVX2 + FMA (Intel Haswell/AMD Excavator or newer)
@@ -214,8 +196,9 @@ The library automatically detects and uses the best available instruction set at
 
 ## Future Directions
 
-Caravela is a project that was bron from my needs.
-It is also in constant development as I learn more about low level programming.
+Caravela is a project that was born from my needs.
+I was growing tired of crappy dynamic links to BLAS libraries.
+It is in constant development as I learn more about low level programming.
 Future areas of development:
 
 - GPU acceleration backends
