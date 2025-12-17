@@ -475,9 +475,9 @@ unsafe fn l2sq_avx2_fma(a: &[f32], b: &[f32]) -> f32 {
     accum0 = _mm256_add_ps(accum0, accum2);
     accum4 = _mm256_add_ps(accum4, accum6);
     let total_vec = _mm256_add_ps(accum0, accum4);
-    let sum = hsum_avx_ps(total_vec);
+    let sum = hsum_avx(total_vec);
 
-    sum + l2sq_scalar_f32(&a[remainder_start..], &b[remainder_start..])
+    sum + l2sq_scalar(&a[remainder_start..], &b[remainder_start..])
 }
 
 #[cfg(target_arch = "aarch64")]

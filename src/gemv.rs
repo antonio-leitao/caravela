@@ -503,11 +503,9 @@ unsafe fn sgemv_t_avx2_fma(m: usize, n: usize, alpha: f32, a: &[f32], x: &[f32],
                 // Handle remaining rows (less than 8)
                 while i < i_max {
                     let x_val = *x.get_unchecked(i);
-                    let x_vec = _mm256_set1_ps(x_val);
                     let row_offset = i * n + j;
 
                     // Load 8 consecutive elements from row i, starting at column j
-                    let k_vec = _mm256_loadu_ps(a.as_ptr().add(row_offset));
 
                     // Multiply and accumulate
                     // Each lane of k_vec corresponds to a different column
