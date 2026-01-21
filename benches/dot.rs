@@ -60,7 +60,7 @@ fn bench_dot_f64(c: &mut Criterion) {
         group.throughput(Throughput::Elements(*size as u64 * 2));
 
         group.bench_with_input(BenchmarkId::new("optimized", size), size, |bench, _| {
-            bench.iter(|| dotzilla::dot(&a, &b));
+            bench.iter(|| caravela::dot(&a, &b));
         });
 
         group.bench_with_input(BenchmarkId::new("naive", size), size, |bench, _| {
@@ -83,7 +83,7 @@ fn bench_dot_f32(c: &mut Criterion) {
         group.throughput(Throughput::Elements(*size as u64 * 2));
 
         group.bench_with_input(BenchmarkId::new("optimized", size), size, |bench, _| {
-            bench.iter(|| dotzilla::dot(&a, &b));
+            bench.iter(|| caravela::dot(&a, &b));
         });
 
         group.bench_with_input(BenchmarkId::new("naive", size), size, |bench, _| {
@@ -107,7 +107,7 @@ fn bench_l2_f64(c: &mut Criterion) {
         group.throughput(Throughput::Elements(*size as u64 * 3 + 1));
 
         group.bench_with_input(BenchmarkId::new("optimized", size), size, |bench, _| {
-            bench.iter(|| dotzilla::l2(&a, &b));
+            bench.iter(|| caravela::l2sq(&a, &b));
         });
 
         group.bench_with_input(BenchmarkId::new("naive", size), size, |bench, _| {
@@ -130,7 +130,7 @@ fn bench_l2_f32(c: &mut Criterion) {
         group.throughput(Throughput::Elements(*size as u64 * 3 + 1));
 
         group.bench_with_input(BenchmarkId::new("optimized", size), size, |bench, _| {
-            bench.iter(|| dotzilla::l2(&a, &b));
+            bench.iter(|| caravela::l2sq(&a, &b));
         });
 
         group.bench_with_input(BenchmarkId::new("naive", size), size, |bench, _| {
@@ -155,11 +155,11 @@ fn bench_dot_alignment(c: &mut Criterion) {
     let b_misaligned = random_vec_f64(size + 1);
 
     group.bench_function("aligned", |bench| {
-        bench.iter(|| dotzilla::dot(&a_aligned, &b_aligned));
+        bench.iter(|| caravela::dot(&a_aligned, &b_aligned));
     });
 
     group.bench_function("misaligned", |bench| {
-        bench.iter(|| dotzilla::dot(&a_misaligned[1..], &b_misaligned[1..]));
+        bench.iter(|| caravela::dot(&a_misaligned[1..], &b_misaligned[1..]));
     });
 
     group.finish();
@@ -176,7 +176,7 @@ fn bench_dot_small_sizes(c: &mut Criterion) {
         let b = random_vec_f64(*size);
 
         group.bench_with_input(BenchmarkId::new("optimized", size), size, |bench, _| {
-            bench.iter(|| dotzilla::dot(&a, &b));
+            bench.iter(|| caravela::dot(&a, &b));
         });
 
         group.bench_with_input(BenchmarkId::new("naive", size), size, |bench, _| {
@@ -207,8 +207,8 @@ fn bench_dot_cache_effects(c: &mut Criterion) {
 
         group.throughput(Throughput::Bytes((*size as u64) * 8 * 2)); // 8 bytes per f64, 2 vectors
 
-        group.bench_with_input(BenchmarkId::new("dotzilla", name), size, |bench, _| {
-            bench.iter(|| dotzilla::dot(&a, &b));
+        group.bench_with_input(BenchmarkId::new("caravela", name), size, |bench, _| {
+            bench.iter(|| caravela::dot(&a, &b));
         });
     }
 

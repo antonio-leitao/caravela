@@ -28,9 +28,9 @@ fn bench_gemm_square_f64(c: &mut Criterion) {
         let flops = 2 * m * n * k; // 2 ops per multiply-add
         group.throughput(Throughput::Elements(flops as u64));
 
-        group.bench_with_input(BenchmarkId::new("dotzilla", size), size, |bench, _| {
+        group.bench_with_input(BenchmarkId::new("caravela", size), size, |bench, _| {
             bench.iter(|| {
-                dotzilla::gemm(m, n, k, 1.0, &a, k, &b, n, 0.0, black_box(&mut c_mat), n);
+                caravela::gemm(m, n, k, 1.0, &a, k, &b, n, 0.0, black_box(&mut c_mat), n);
             });
         });
     }
@@ -60,11 +60,11 @@ fn bench_gemm_rectangular_f64(c: &mut Criterion) {
         group.throughput(Throughput::Elements(flops as u64));
 
         group.bench_with_input(
-            BenchmarkId::new("dotzilla", format!("{}x{}x{}", m, n, k)),
+            BenchmarkId::new("caravela", format!("{}x{}x{}", m, n, k)),
             &(m, n, k),
             |bench, _| {
                 bench.iter(|| {
-                    dotzilla::gemm(
+                    caravela::gemm(
                         *m,
                         *n,
                         *k,
@@ -101,9 +101,9 @@ fn bench_gemm_small_f64(c: &mut Criterion) {
         let flops = 2 * m * n * k;
         group.throughput(Throughput::Elements(flops as u64));
 
-        group.bench_with_input(BenchmarkId::new("dotzilla", size), size, |bench, _| {
+        group.bench_with_input(BenchmarkId::new("caravela", size), size, |bench, _| {
             bench.iter(|| {
-                dotzilla::gemm(m, n, k, 1.0, &a, k, &b, n, 0.0, black_box(&mut c_mat), n);
+                caravela::gemm(m, n, k, 1.0, &a, k, &b, n, 0.0, black_box(&mut c_mat), n);
             });
         });
     }
@@ -131,14 +131,14 @@ fn bench_gemm_transposed_f64(c: &mut Criterion) {
     // Benchmark NN (no transpose)
     group.bench_function("NN", |bench| {
         bench.iter(|| {
-            dotzilla::gemm(m, n, k, 1.0, &a, k, &b, n, 0.0, black_box(&mut c_mat), n);
+            caravela::gemm(m, n, k, 1.0, &a, k, &b, n, 0.0, black_box(&mut c_mat), n);
         });
     });
 
     // Benchmark TN (A transposed)
     group.bench_function("TN", |bench| {
         bench.iter(|| {
-            dotzilla::gemm_tn(
+            caravela::gemm_tn(
                 m,
                 n,
                 k,
@@ -157,7 +157,7 @@ fn bench_gemm_transposed_f64(c: &mut Criterion) {
     // Benchmark NT (B transposed)
     group.bench_function("NT", |bench| {
         bench.iter(|| {
-            dotzilla::gemm_nt(
+            caravela::gemm_nt(
                 m,
                 n,
                 k,
@@ -176,7 +176,7 @@ fn bench_gemm_transposed_f64(c: &mut Criterion) {
     // Benchmark TT (both transposed)
     group.bench_function("TT", |bench| {
         bench.iter(|| {
-            dotzilla::gemm_tt(m, n, k, 1.0, &at, m, &bt, k, 0.0, black_box(&mut c_mat), n);
+            caravela::gemm_tt(m, n, k, 1.0, &at, m, &bt, k, 0.0, black_box(&mut c_mat), n);
         });
     });
 
@@ -198,9 +198,9 @@ fn bench_gemm_f32(c: &mut Criterion) {
         let flops = 2 * m * n * k;
         group.throughput(Throughput::Elements(flops as u64));
 
-        group.bench_with_input(BenchmarkId::new("dotzilla", size), size, |bench, _| {
+        group.bench_with_input(BenchmarkId::new("caravela", size), size, |bench, _| {
             bench.iter(|| {
-                dotzilla::gemm(
+                caravela::gemm(
                     m,
                     n,
                     k,
@@ -239,13 +239,13 @@ fn bench_matmul_simple(c: &mut Criterion) {
 
         group.bench_with_input(BenchmarkId::new("f64", size), size, |bench, _| {
             bench.iter(|| {
-                let _c = dotzilla::matmul_f64(m, n, k, &a_f64, &b_f64);
+                let _c = caravela::matmul_f64(m, n, k, &a_f64, &b_f64);
             });
         });
 
         group.bench_with_input(BenchmarkId::new("f32", size), size, |bench, _| {
             bench.iter(|| {
-                let _c = dotzilla::matmul_f32(m, n, k, &a_f32, &b_f32);
+                let _c = caravela::matmul_f32(m, n, k, &a_f32, &b_f32);
             });
         });
     }
@@ -284,7 +284,7 @@ fn bench_vs_naive(c: &mut Criterion) {
 
         group.bench_with_input(BenchmarkId::new("optimized", size), size, |bench, _| {
             bench.iter(|| {
-                dotzilla::gemm(m, n, k, 1.0, &a, k, &b, n, 0.0, black_box(&mut c_opt), n);
+                caravela::gemm(m, n, k, 1.0, &a, k, &b, n, 0.0, black_box(&mut c_opt), n);
             });
         });
 

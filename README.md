@@ -46,15 +46,23 @@ Caravela provides two API levels to suit different needs:
 Simple, easy-to-use functions for everyday linear algebra operations.
 
 ```rust
-use caravela::{dot, l2, matvec, matmul};
+use caravela::{dot, l2sq, normalize, scale, matvec, matmul};
 
 // Vector dot product
 let a = vec![1.0, 2.0, 3.0];
 let b = vec![4.0, 5.0, 6.0];
 let result = dot(&a, &b);  // 32.0
 
-// Euclidean distance
-let distance = l2(&a, &b);  // sqrt(27) ≈ 5.196
+// Squared Euclidean distance (more efficient for comparisons)
+let dist_sq = l2sq(&a, &b);  // 27.0 (use sqrt if you need actual distance)
+
+// Normalize a vector in-place (returns original norm)
+let mut v = vec![3.0, 4.0];
+let norm = normalize(&mut v);  // norm = 5.0, v = [0.6, 0.8]
+
+// Scale a vector in-place
+let mut v = vec![1.0, 2.0, 3.0];
+scale(&mut v, 2.0);  // v = [2.0, 4.0, 6.0]
 
 // Matrix-vector multiplication: y = Ax
 let matrix = vec![1.0, 2.0, 3.0,  // 2x3 matrix (row-major)
@@ -75,11 +83,11 @@ let c = matmul(2, 2, 2, &a, &b);  // [19.0, 22.0, 43.0, 50.0]
 BLAS-style interface providing full control over all parameters and operations.
 
 ```rust
-use caravela::{dot, l2, gemv, gemv_t, gemm, gemm_tn, gemm_nt, gemm_tt};
+use caravela::{dot, l2sq, gemv, gemv_t, gemm, gemm_tn, gemm_nt, gemm_tt};
 
 // Vector operations (same as high-level, included for completeness)
 let dot_product = dot(&a, &b);
-let distance = l2(&a, &b);
+let dist_sq = l2sq(&a, &b);
 
 // General matrix-vector multiply: y = α·A·x + β·y
 let matrix = vec![1.0, 2.0, 3.0,  // 2x3 matrix

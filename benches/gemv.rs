@@ -91,7 +91,7 @@ fn bench_gemv_f64(c: &mut Criterion) {
 
         group.bench_with_input(BenchmarkId::new("optimized", size), size, |b, _| {
             b.iter(|| {
-                dotzilla::gemv(m, n, 1.0, &a, &x, 0.0, black_box(&mut y));
+                caravela::gemv(m, n, 1.0, &a, &x, 0.0, black_box(&mut y));
             });
         });
 
@@ -121,7 +121,7 @@ fn bench_gemv_t_f64(c: &mut Criterion) {
 
         group.bench_with_input(BenchmarkId::new("optimized", size), size, |b, _| {
             b.iter(|| {
-                dotzilla::gemv_t(m, n, 1.0, &a, &x, 0.0, black_box(&mut y));
+                caravela::gemv_t(m, n, 1.0, &a, &x, 0.0, black_box(&mut y));
             });
         });
 
@@ -151,7 +151,7 @@ fn bench_gemv_f32(c: &mut Criterion) {
 
         group.bench_with_input(BenchmarkId::new("optimized", size), size, |b, _| {
             b.iter(|| {
-                dotzilla::gemv(m, n, 1.0f32, &a, &x, 0.0f32, black_box(&mut y));
+                caravela::gemv(m, n, 1.0f32, &a, &x, 0.0f32, black_box(&mut y));
             });
         });
 
@@ -181,7 +181,7 @@ fn bench_gemv_t_f32(c: &mut Criterion) {
 
         group.bench_with_input(BenchmarkId::new("optimized", size), size, |b, _| {
             b.iter(|| {
-                dotzilla::gemv_t(m, n, 1.0f32, &a, &x, 0.0f32, black_box(&mut y));
+                caravela::gemv_t(m, n, 1.0f32, &a, &x, 0.0f32, black_box(&mut y));
             });
         });
 
@@ -218,7 +218,7 @@ fn bench_gemv_rectangular(c: &mut Criterion) {
             &(m, n),
             |b, _| {
                 b.iter(|| {
-                    dotzilla::gemv(*m, *n, 1.0, &a, &x, 0.0, black_box(&mut y));
+                    caravela::gemv(*m, *n, 1.0, &a, &x, 0.0, black_box(&mut y));
                 });
             },
         );
@@ -260,7 +260,7 @@ fn bench_gemv_alpha_beta(c: &mut Criterion) {
     for (name, alpha, beta) in params.iter() {
         group.bench_function(*name, |b| {
             b.iter(|| {
-                dotzilla::gemv(m, n, *alpha, &a, &x, *beta, black_box(&mut y));
+                caravela::gemv(m, n, *alpha, &a, &x, *beta, black_box(&mut y));
             });
         });
     }
@@ -285,13 +285,13 @@ fn bench_matvec_simple(c: &mut Criterion) {
 
         group.bench_with_input(BenchmarkId::new("f64", size), size, |b, _| {
             b.iter(|| {
-                let _y = dotzilla::matvec::<f64>(m, n, &a_f64, &x_f64);
+                let _y = caravela::matvec::<f64>(m, n, &a_f64, &x_f64);
             });
         });
 
         group.bench_with_input(BenchmarkId::new("f32", size), size, |b, _| {
             b.iter(|| {
-                let _y = dotzilla::matvec::<f32>(m, n, &a_f32, &x_f32);
+                let _y = caravela::matvec::<f32>(m, n, &a_f32, &x_f32);
             });
         });
     }

@@ -7,11 +7,20 @@ use num_traits::{One, Zero};
 
 pub trait Blas: Sized + Copy + Zero + One {
     fn dot(a: &[Self], b: &[Self]) -> Self;
-    fn l2(a: &[Self], b: &[Self]) -> Self;
+
+    /// Squared Euclidean distance: sum((a[i] - b[i])^2)
+    fn l2sq(a: &[Self], b: &[Self]) -> Self;
+
+    /// Normalize vector in-place, returns original norm
+    fn normalize(v: &mut [Self]) -> Self;
+
+    /// Scale vector in-place: v[i] *= scale
+    fn scale(v: &mut [Self], scale: Self);
+
     fn gemv(m: usize, n: usize, alpha: Self, a: &[Self], x: &[Self], beta: Self, y: &mut [Self]);
     fn gemv_t(m: usize, n: usize, alpha: Self, a: &[Self], x: &[Self], beta: Self, y: &mut [Self]);
 
-    // New GEMM methods
+    // GEMM methods
     fn gemm(
         m: usize,
         n: usize,
@@ -76,8 +85,18 @@ impl Blas for f32 {
     }
 
     #[inline]
-    fn l2(a: &[Self], b: &[Self]) -> Self {
-        dot32::sl2(a, b)
+    fn l2sq(a: &[Self], b: &[Self]) -> Self {
+        dot32::sl2sq(a, b)
+    }
+
+    #[inline]
+    fn normalize(v: &mut [Self]) -> Self {
+        dot32::snormalize(v)
+    }
+
+    #[inline]
+    fn scale(v: &mut [Self], scale: Self) {
+        dot32::sscale(v, scale)
     }
 
     #[inline]
@@ -166,8 +185,18 @@ impl Blas for f64 {
     }
 
     #[inline]
-    fn l2(a: &[Self], b: &[Self]) -> Self {
-        dot64::dl2(a, b)
+    fn l2sq(a: &[Self], b: &[Self]) -> Self {
+        dot64::dl2sq(a, b)
+    }
+
+    #[inline]
+    fn normalize(v: &mut [Self]) -> Self {
+        dot64::dnormalize(v)
+    }
+
+    #[inline]
+    fn scale(v: &mut [Self], scale: Self) {
+        dot64::dscale(v, scale)
     }
 
     #[inline]
@@ -249,15 +278,32 @@ impl Blas for f64 {
     }
 }
 
-// Public API - these are all users need
+// ============= Public API =============
+
+/// Computes the dot product of two slices
 #[inline]
 pub fn dot<T: Blas>(a: &[T], b: &[T]) -> T {
     T::dot(a, b)
 }
 
+/// Computes the squared Euclidean distance: sum((a[i] - b[i])^2)
 #[inline]
-pub fn l2<T: Blas>(a: &[T], b: &[T]) -> T {
-    T::l2(a, b)
+pub fn l2sq<T: Blas>(a: &[T], b: &[T]) -> T {
+    T::l2sq(a, b)
+}
+
+/// Normalizes a vector in-place to unit length.
+/// Returns the original L2 norm of the vector.
+/// If the vector has zero norm, it remains unchanged and 0 is returned.
+#[inline]
+pub fn normalize<T: Blas>(v: &mut [T]) -> T {
+    T::normalize(v)
+}
+
+/// Scales a vector in-place by a scalar: v[i] *= scale
+#[inline]
+pub fn scale<T: Blas>(v: &mut [T], s: T) {
+    T::scale(v, s)
 }
 
 #[inline]

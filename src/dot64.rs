@@ -218,15 +218,16 @@ fn ddot_scalar(a: &[f64], b: &[f64]) -> f64 {
     total
 }
 
-// --- Euclidean Distance Squared (and then Euclidean Distance) ---
+// --- Squared Euclidean Distance ---
 
 /// Computes the squared Euclidean distance: sum((a[i] - b[i])^2)
-/// This is the core computation before the final sqrt.
-fn l2sq(a: &[f64], b: &[f64]) -> f64 {
+/// # Panics
+/// Panics if the slices have different lengths
+pub fn dl2sq(a: &[f64], b: &[f64]) -> f64 {
     assert_eq!(
         a.len(),
         b.len(),
-        "Slices must have equal length for euclidean_distance_squared"
+        "Slices must have equal length for squared euclidean distance"
     );
     if a.is_empty() {
         return 0.0;
@@ -234,31 +235,27 @@ fn l2sq(a: &[f64], b: &[f64]) -> f64 {
 
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     {
-        // AVX2 is sufficient for (a-b)^2. FMA is not directly helpful here.
         if is_x86_feature_detected!("avx2") {
-            return unsafe { l2sq_avx2(a, b) };
+            return unsafe { dl2sq_avx2(a, b) };
         }
     }
 
     #[cfg(target_arch = "aarch64")]
     {
         if is_aarch64_feature_detected!("neon") {
-            return unsafe { l2sq_neon(a, b) };
+            return unsafe { dl2sq_neon(a, b) };
         }
     }
-    l2sq_scalar(a, b)
-}
-/// Computes the Euclidean distance between two f64 slices
-/// # Panics
-/// Panics if the slices have different lengths
-pub fn dl2(a: &[f64], b: &[f64]) -> f64 {
-    let dist_sq = l2sq(a, b);
-    dist_sq.sqrt()
+    dl2sq_scalar(a, b)
 }
 
+/// Computes the Euclidean distance between two f64 slices
+/// This is sqrt(l2sq(a, b))
+/// # Panics
+/// Panics if the slices have different lengths
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-#[target_feature(enable = "avx2")] // FMA not needed for (a-b)^2
-unsafe fn l2sq_avx2(a: &[f64], b: &[f64]) -> f64 {
+#[target_feature(enable = "avx2")]
+unsafe fn dl2sq_avx2(a: &[f64], b: &[f64]) -> f64 {
     let len = a.len();
     let mut accum0 = _mm256_setzero_pd();
     let mut accum1 = _mm256_setzero_pd();
@@ -283,7 +280,7 @@ unsafe fn l2sq_avx2(a: &[f64], b: &[f64]) -> f64 {
         let a0 = _mm256_loadu_pd(a_ptr.add(offset));
         let b0 = _mm256_loadu_pd(b_ptr.add(offset));
         let diff0 = _mm256_sub_pd(a0, b0);
-        accum0 = _mm256_add_pd(accum0, _mm256_mul_pd(diff0, diff0)); // (a-b)^2, could use FMA as diff0*diff0 + accum0 but add is fine
+        accum0 = _mm256_add_pd(accum0, _mm256_mul_pd(diff0, diff0));
 
         let a1 = _mm256_loadu_pd(a_ptr.add(offset + 4));
         let b1 = _mm256_loadu_pd(b_ptr.add(offset + 4));
@@ -334,12 +331,12 @@ unsafe fn l2sq_avx2(a: &[f64], b: &[f64]) -> f64 {
     let total_vec = _mm256_add_pd(accum0, accum4);
     let sum = hsum_avx(total_vec);
 
-    sum + l2sq_scalar(&a[remainder_start..], &b[remainder_start..])
+    sum + dl2sq_scalar(&a[remainder_start..], &b[remainder_start..])
 }
 
 #[cfg(target_arch = "aarch64")]
 #[target_feature(enable = "neon")]
-unsafe fn l2sq_neon(a: &[f64], b: &[f64]) -> f64 {
+unsafe fn dl2sq_neon(a: &[f64], b: &[f64]) -> f64 {
     let len = a.len();
     let mut accum0 = vdupq_n_f64(0.0);
     let mut accum1 = vdupq_n_f64(0.0);
@@ -364,7 +361,7 @@ unsafe fn l2sq_neon(a: &[f64], b: &[f64]) -> f64 {
         let va0 = vld1q_f64(a_ptr.add(offset));
         let vb0 = vld1q_f64(b_ptr.add(offset));
         let diff0 = vsubq_f64(va0, vb0);
-        accum0 = vfmaq_f64(accum0, diff0, diff0); // Neon FMA: accum + diff * diff
+        accum0 = vfmaq_f64(accum0, diff0, diff0);
 
         let va1 = vld1q_f64(a_ptr.add(offset + 2));
         let vb1 = vld1q_f64(b_ptr.add(offset + 2));
@@ -415,11 +412,11 @@ unsafe fn l2sq_neon(a: &[f64], b: &[f64]) -> f64 {
     let total_vec = vaddq_f64(accum0, accum4);
     let sum = hsum_neon(total_vec);
 
-    sum + l2sq_scalar(&a[remainder_start..], &b[remainder_start..])
+    sum + dl2sq_scalar(&a[remainder_start..], &b[remainder_start..])
 }
 
 #[inline(always)]
-fn l2sq_scalar(a: &[f64], b: &[f64]) -> f64 {
+fn dl2sq_scalar(a: &[f64], b: &[f64]) -> f64 {
     let len = a.len();
     if len == 0 {
         return 0.0;
@@ -453,6 +450,144 @@ fn l2sq_scalar(a: &[f64], b: &[f64]) -> f64 {
         i += 1;
     }
     total_sum
+}
+
+// --- Vector Normalization ---
+
+/// Normalizes a vector in-place to unit length.
+/// Returns the original norm (L2 norm) of the vector.
+/// If the vector has zero norm, it remains unchanged and 0.0 is returned.
+pub fn dnormalize(v: &mut [f64]) -> f64 {
+    if v.is_empty() {
+        return 0.0;
+    }
+
+    let norm_sq = ddot(v, v);
+    if norm_sq == 0.0 {
+        return 0.0;
+    }
+
+    let norm = norm_sq.sqrt();
+    let inv_norm = 1.0 / norm;
+
+    dscale(v, inv_norm);
+
+    norm
+}
+
+/// Scales a vector in-place by a scalar: v[i] *= scale
+pub fn dscale(v: &mut [f64], scale: f64) {
+    if v.is_empty() {
+        return;
+    }
+
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    {
+        if is_x86_feature_detected!("avx2") {
+            unsafe { dscale_avx2(v, scale) };
+            return;
+        }
+    }
+
+    #[cfg(target_arch = "aarch64")]
+    {
+        if is_aarch64_feature_detected!("neon") {
+            unsafe { dscale_neon(v, scale) };
+            return;
+        }
+    }
+
+    dscale_scalar(v, scale);
+}
+
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+#[target_feature(enable = "avx2")]
+unsafe fn dscale_avx2(v: &mut [f64], scale: f64) {
+    let len = v.len();
+    let scale_vec = _mm256_set1_pd(scale);
+    let v_ptr = v.as_mut_ptr();
+    let mut i = 0;
+
+    // Process 16 elements per iteration (4 vectors × 4 elements)
+    let chunk_size = 16;
+    let iterations = len / chunk_size;
+    let remainder_start = iterations * chunk_size;
+
+    for _ in 0..iterations {
+        let offset = i;
+
+        let v0 = _mm256_loadu_pd(v_ptr.add(offset));
+        _mm256_storeu_pd(v_ptr.add(offset), _mm256_mul_pd(v0, scale_vec));
+
+        let v1 = _mm256_loadu_pd(v_ptr.add(offset + 4));
+        _mm256_storeu_pd(v_ptr.add(offset + 4), _mm256_mul_pd(v1, scale_vec));
+
+        let v2 = _mm256_loadu_pd(v_ptr.add(offset + 8));
+        _mm256_storeu_pd(v_ptr.add(offset + 8), _mm256_mul_pd(v2, scale_vec));
+
+        let v3 = _mm256_loadu_pd(v_ptr.add(offset + 12));
+        _mm256_storeu_pd(v_ptr.add(offset + 12), _mm256_mul_pd(v3, scale_vec));
+
+        i += chunk_size;
+    }
+
+    // Process remaining elements
+    dscale_scalar(&mut v[remainder_start..], scale);
+}
+
+#[cfg(target_arch = "aarch64")]
+#[target_feature(enable = "neon")]
+unsafe fn dscale_neon(v: &mut [f64], scale: f64) {
+    let len = v.len();
+    let scale_vec = vdupq_n_f64(scale);
+    let v_ptr = v.as_mut_ptr();
+    let mut i = 0;
+
+    // Process 8 elements per iteration (4 vectors × 2 elements)
+    let chunk_size = 8;
+    let iterations = len / chunk_size;
+    let remainder_start = iterations * chunk_size;
+
+    for _ in 0..iterations {
+        let offset = i;
+
+        let v0 = vld1q_f64(v_ptr.add(offset));
+        vst1q_f64(v_ptr.add(offset), vmulq_f64(v0, scale_vec));
+
+        let v1 = vld1q_f64(v_ptr.add(offset + 2));
+        vst1q_f64(v_ptr.add(offset + 2), vmulq_f64(v1, scale_vec));
+
+        let v2 = vld1q_f64(v_ptr.add(offset + 4));
+        vst1q_f64(v_ptr.add(offset + 4), vmulq_f64(v2, scale_vec));
+
+        let v3 = vld1q_f64(v_ptr.add(offset + 6));
+        vst1q_f64(v_ptr.add(offset + 6), vmulq_f64(v3, scale_vec));
+
+        i += chunk_size;
+    }
+
+    // Process remaining elements
+    dscale_scalar(&mut v[remainder_start..], scale);
+}
+
+#[inline(always)]
+fn dscale_scalar(v: &mut [f64], scale: f64) {
+    let len = v.len();
+    let mut i = 0;
+    let upper = len - (len % 4);
+
+    while i < upper {
+        v[i] *= scale;
+        v[i + 1] *= scale;
+        v[i + 2] *= scale;
+        v[i + 3] *= scale;
+        i += 4;
+    }
+
+    while i < len {
+        v[i] *= scale;
+        i += 1;
+    }
 }
 
 // Horizontal sum utilities
@@ -529,55 +664,89 @@ mod tests {
         }
     }
 
-    // --- Euclidean Distance Squared (and then Euclidean Distance) ---
+    // --- Squared Euclidean Distance Tests ---
     #[test]
-    fn test_euclidean_distance_consistency_small() {
-        let a = vec![1.0, 2.0, 3.0]; // (1-4)^2 + (2-5)^2 + (3-6)^2 = (-3)^2 + (-3)^2 + (-3)^2 = 9+9+9 = 27
-        let b = vec![4.0, 5.0, 6.0]; // sqrt(27) approx 5.1961524227
-        assert_abs_diff_eq!(dl2(&a, &b), 27.0_f64.sqrt(), epsilon = 1e-10);
-    }
-
-    #[test]
-    fn test_euclidean_distance_zero() {
+    fn test_l2sq_consistency_small() {
         let a = vec![1.0, 2.0, 3.0];
-        assert_abs_diff_eq!(dl2(&a, &a), 0.0, epsilon = 1e-10);
-        let empty: Vec<f64> = vec![];
-        assert_abs_diff_eq!(dl2(&empty, &empty), 0.0, epsilon = 1e-10);
+        let b = vec![4.0, 5.0, 6.0];
+        // (1-4)^2 + (2-5)^2 + (3-6)^2 = 9+9+9 = 27
+        assert_abs_diff_eq!(dl2sq(&a, &b), 27.0, epsilon = 1e-10);
     }
 
     #[test]
-    fn test_euclidean_spcialized_vs_general() {
+    fn test_l2sq_zero() {
+        let a = vec![1.0, 2.0, 3.0];
+        assert_abs_diff_eq!(dl2sq(&a, &a), 0.0, epsilon = 1e-10);
+        let empty: Vec<f64> = vec![];
+        assert_abs_diff_eq!(dl2sq(&empty, &empty), 0.0, epsilon = 1e-10);
+    }
+
+    #[test]
+    fn test_l2sq_specialized_vs_general() {
         for len in [0, 1, 3, 4, 7, 15, 16, 31, 32, 33, 63, 64, 65, 100, 1024] {
             let a = random_f64_vec(len);
             let b = random_f64_vec(len);
 
-            let simd_result = dl2(&a, &b);
-            // Calculate scalar result carefully
-            let scalar_sq_sum = l2sq_scalar(&a, &b);
-            let scalar_result = scalar_sq_sum.sqrt();
+            let simd_result = dl2sq(&a, &b);
+            let scalar_result = dl2sq_scalar(&a, &b);
 
             assert_abs_diff_eq!(simd_result, scalar_result, epsilon = 1e-9);
         }
     }
+
+    // --- Normalization Tests ---
     #[test]
-    fn test_euclidean_vs_dot() {
-        // This test checks if the two methods for Euclidean distance produce similar results
-        // High precision might not be achievable due to floating point arithmetic differences.
-        for len in [10, 33, 128, 513] {
-            // Larger lengths might show more deviation
-            let a = random_f64_vec(len);
-            let b = random_f64_vec(len);
+    fn test_normalize_basic() {
+        let mut v = vec![3.0, 4.0];
+        let norm = dnormalize(&mut v);
+        assert_abs_diff_eq!(norm, 5.0, epsilon = 1e-10);
+        assert_abs_diff_eq!(v[0], 0.6, epsilon = 1e-10);
+        assert_abs_diff_eq!(v[1], 0.8, epsilon = 1e-10);
+    }
 
-            let direct_dist = dl2(&a, &b);
+    #[test]
+    fn test_normalize_unit_length() {
+        let mut v = random_f64_vec(100);
+        dnormalize(&mut v);
 
-            let a_dot_a = ddot(&a, &a);
-            let b_dot_b = ddot(&b, &b);
-            let a_dot_b = ddot(&a, &b);
-            let term = a_dot_a + b_dot_b - 2.0 * a_dot_b;
-            let dot_based_dist = if term < 0.0 { 0.0 } else { term.sqrt() };
+        // Check that the result has unit length
+        let norm_sq = ddot(&v, &v);
+        assert_abs_diff_eq!(norm_sq, 1.0, epsilon = 1e-10);
+    }
 
-            // Use a slightly larger epsilon for this comparison due to different computation paths
-            assert_abs_diff_eq!(direct_dist, dot_based_dist, epsilon = 1e-7);
+    #[test]
+    fn test_normalize_zero_vector() {
+        let mut v = vec![0.0, 0.0, 0.0];
+        let norm = dnormalize(&mut v);
+        assert_abs_diff_eq!(norm, 0.0, epsilon = 1e-10);
+        // Vector should remain unchanged
+        assert_abs_diff_eq!(v[0], 0.0, epsilon = 1e-10);
+        assert_abs_diff_eq!(v[1], 0.0, epsilon = 1e-10);
+        assert_abs_diff_eq!(v[2], 0.0, epsilon = 1e-10);
+    }
+
+    #[test]
+    fn test_scale_basic() {
+        let mut v = vec![1.0, 2.0, 3.0, 4.0];
+        dscale(&mut v, 2.0);
+        assert_abs_diff_eq!(v[0], 2.0, epsilon = 1e-10);
+        assert_abs_diff_eq!(v[1], 4.0, epsilon = 1e-10);
+        assert_abs_diff_eq!(v[2], 6.0, epsilon = 1e-10);
+        assert_abs_diff_eq!(v[3], 8.0, epsilon = 1e-10);
+    }
+
+    #[test]
+    fn test_scale_various_lengths() {
+        for len in [0, 1, 3, 7, 15, 16, 17, 31, 32, 33, 100] {
+            let mut v = random_f64_vec(len);
+            let original = v.clone();
+            let scale = 2.5;
+
+            dscale(&mut v, scale);
+
+            for i in 0..len {
+                assert_abs_diff_eq!(v[i], original[i] * scale, epsilon = 1e-10);
+            }
         }
     }
 }
